@@ -12,12 +12,14 @@ SpecialFunctions = "276daf66-3868-5448-9aa4-cd146d93841b"
 [compat]
 Distributions = "0.25.120"
 Polynomials = "4.0.19"
+QuadGK = "2.11.2"
 Random = "1.11.0"
 SpecialFunctions = "2.5.1"
 Test = "1.11.0"
 
 [extras]
+QuadGK = "1fd47b50-473d-5c70-9696-f719f8f3bcdc"
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 
 [targets]
-test = ["Test"]
+test = ["Test", "QuadGK"]

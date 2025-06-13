@@ -1,4 +1,2 @@
-using DistributionsHEP
-using Test
 
-@test true
+include("test-chebychev.jl")
