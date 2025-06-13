@@ -101,3 +101,43 @@ function Distributions.cdf(d::CrystalBall{T}, x::Real) where {T<:Real}
         return cdf_at_minus_alpha + d.norm_const * d.σ * integral_gaussian_part
     end
 end
+
+"""
+    quantile(d::CrystalBall, p::Real)
+
+Compute the quantile (inverse CDF) of the CrystalBall distribution `d` for a given probability `p`.
+
+The function determines if the probability `p` falls into the power-law tail or the Gaussian core
+and then inverts the corresponding CDF segment.
+Requires `SpecialFunctions.erf` and `SpecialFunctions.erfinv` to be available.
+"""
+function Distributions.quantile(d::CrystalBall{T}, p::Real) where {T<:Real}
+    if p < zero(T) || p > one(T)
+        throw(DomainError(p, "Probability p must be in [0,1]."))
+    end
+    p == zero(T) && return T(-Inf)
+    p == one(T) && return T(Inf)
+
+    # CDF value at the transition point x̂ = -α. (d.B_const + d.α) simplifies to (d.n / d.α)
+    cdf_at_minus_alpha = cdf(d, d.μ - d.α * d.σ)
+
+    x̂::T # Scaled quantile score
+    if p <= cdf_at_minus_alpha
+        # Quantile is in the power-law tail. Invert the tail CDF formula.
+        base = (p * (d.n - 1)) / (d.norm_const * d.A_const)
+        x̂ = d.B_const - base^(one(T) / (one(T) - d.n))
+    else
+        # Quantile is in the Gaussian core. Invert the Gaussian core CDF formula.
+        term_for_erfinv_num = (p - cdf_at_minus_alpha)
+        term_for_erfinv_den = d.norm_const * d.σ * sqrt(T(π) / T(2))
+
+        erf_alpha_sqrt2 = erf(d.α / sqrt(T(2)))
+        arg_erfinv = (term_for_erfinv_num / term_for_erfinv_den) - erf_alpha_sqrt2
+
+        # arg_erfinv should be within [-1, 1] for erfinv. 
+        # Clamping might be needed for extreme numerical precision issues, but typically not.
+        x̂ = sqrt(T(2)) * erfinv(arg_erfinv)
+    end
+
+    return d.μ + d.σ * x̂
+end

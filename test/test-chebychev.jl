@@ -45,3 +45,23 @@ end
     @test cdf(d, -100) < 0.1
     @test isapprox(cdf(d, d.μ + 5 * d.σ), 1; atol=1e-5)
 end
+
+# # for visual inspection
+# using Plots
+# plot(x -> cdf(d, x), -10, 10,
+#     label="Crystal Ball CDF",
+#     xlabel="x", ylabel="CDF",
+#     title="Crystal Ball Distribution")
+# 
+# plot(x -> quantile(d, x), 0.2, 0.99,
+#     label="Crystal Ball Quantile",
+#     xlabel="x", ylabel="Quantile",
+#     title="Crystal Ball Distribution")
+# 
+
+@testset "CrystalBall quantile properties" begin
+    # gaussian part
+    @test quantile(d, cdf(d, 0.9)) ≈ 0.9
+    # in the power-law tail
+    @test quantile(d, cdf(d, 0.1)) ≈ 0.1
+end
