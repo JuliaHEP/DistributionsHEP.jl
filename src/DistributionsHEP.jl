@@ -3,7 +3,9 @@ module DistributionsHEP
 using Random
 using Distributions
 using SpecialFunctions
-import Distributions: @check_args
+
+import Distributions: pdf, cdf, @check_args
+export pdf, cdf
 
 export Chebyshev
 include("chebychev.jl")
