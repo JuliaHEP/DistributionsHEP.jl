@@ -121,7 +121,7 @@ function Distributions.quantile(d::CrystalBall{T}, p::Real) where {T<:Real}
     # CDF value at the transition point x̂ = -α. (d.B_const + d.α) simplifies to (d.n / d.α)
     cdf_at_minus_alpha = cdf(d, d.μ - d.α * d.σ)
 
-    x̂::T # Scaled quantile score
+    x̂ = zero(T) # Scaled quantile score
     if p <= cdf_at_minus_alpha
         # Quantile is in the power-law tail. Invert the tail CDF formula.
         base = (p * (d.n - 1)) / (d.norm_const * d.A_const)
