@@ -1,2 +1,3 @@
+using Test
 
-include("test-chebychev.jl")
+include("test-crystalball.jl")
