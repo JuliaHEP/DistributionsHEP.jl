@@ -22,7 +22,6 @@ end
 
 # check integral
 numerical_integral = quadgk(x -> pdf(d, x), -Inf, Inf)[1]
-@show numerical_integral
 @test isapprox(numerical_integral, 1.0; atol=1e-7)
 
 # # for visual inspection
