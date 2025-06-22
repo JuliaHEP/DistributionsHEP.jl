@@ -4,8 +4,9 @@ using Random
 using Distributions
 using SpecialFunctions
 
-import Distributions: pdf, cdf, @check_args
-export pdf, cdf
+import Distributions: @check_args
+import Distributions: pdf, cdf, mean, var, skewness, kurtosis, entropy
+export pdf, cdf, mean, var, skewness, kurtosis, entropy
 
 export Chebyshev
 include("chebychev.jl")
