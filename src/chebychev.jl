@@ -2,7 +2,7 @@ using SpecialFunctions
 using Polynomials
 
 struct Chebyshev <: ContinuousUnivariateDistribution
-    polynomial::ChebyshevT{Float64, :x}
+    polynomial::ChebyshevT{Float64,:x}
     integral::Float64
     a::Float64
     b::Float64
