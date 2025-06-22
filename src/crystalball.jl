@@ -88,7 +88,8 @@ function Distributions.cdf(d::CrystalBall{T}, x::Real) where {T<:Real}
     x̂ = (x - d.μ) / d.σ
 
     # Value of the CDF at the transition point x̂ = -α
-    cdf_at_minus_alpha = d.norm_const * d.A_const / (d.n - 1) * (d.B_const - (-d.α))^(1 - d.n)
+    cdf_at_minus_alpha =
+        d.norm_const * d.A_const / (d.n - 1) * (d.B_const - (-d.α))^(1 - d.n)
 
     if x̂ <= -d.α
         # CDF for the power-law tail part (x̂ ≤ -α)
@@ -97,7 +98,8 @@ function Distributions.cdf(d::CrystalBall{T}, x::Real) where {T<:Real}
     else
         # CDF for the Gaussian part (x̂ > -α)
         # CDF at -α + integral of Gaussian PDF from -α to x̂
-        integral_gaussian_part = sqrt(T(π) / 2) * (erf(x̂ / sqrt(T(2))) + erf(d.α / sqrt(T(2))))
+        integral_gaussian_part =
+            sqrt(T(π) / 2) * (erf(x̂ / sqrt(T(2))) + erf(d.α / sqrt(T(2))))
         return cdf_at_minus_alpha + d.norm_const * d.σ * integral_gaussian_part
     end
 end
