@@ -15,8 +15,7 @@ export mean, std, var, skewness, kurtosis
 
 export Chebyshev
 export StandardChebyshev
-export transformed_chebychev
-include("chebychev.jl")
+include("chebyshev.jl")
 
 export ArgusBG
 include("argusBG.jl")
