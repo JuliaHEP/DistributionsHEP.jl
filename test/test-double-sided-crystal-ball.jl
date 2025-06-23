@@ -114,3 +114,14 @@ end
     @test cdf(d_float32, 0.0f0) isa Float32
     @test quantile(d_float32, 0.5f0) isa Float32
 end
+
+d_float64 = DoubleCrystalBall(0.0, 1.0, 1.5, 2.0, 2.0, 3.0)
+d_float32 = DoubleCrystalBall(0.0f0, 1.0f0, 1.5f0, 2.0f0, 2.0f0, 3.0f0)
+@testset "DoubleCrystalBall maximum/minimum interfaces" begin
+    @test maximum(d_float64) == Inf
+    @test maximum(d_float32) == Inf32
+    @test minimum(d_float64) == -Inf
+    @test minimum(d_float32) == -Inf32
+    @test minimum(d_float64) == support(d_float64).lb
+    @test maximum(d_float64) == support(d_float64).ub
+end

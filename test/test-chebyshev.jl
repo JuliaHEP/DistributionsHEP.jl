@@ -97,3 +97,11 @@ end
     @test pdf_array[3] ≈ pdf(d_quadratic, 0.5)
 end
 
+d = Chebyshev([1.0, 0.0, 1.0], -2.0, 2.0)
+@testset "Chebyshev maximum/minimum interfaces" begin
+    @test maximum(d) == 2.0
+    @test minimum(d) == -2.0
+    @test minimum(d) == support(d).lb
+    @test maximum(d) == support(d).ub
+end
+

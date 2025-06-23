@@ -155,5 +155,5 @@ function Distributions.quantile(d::DoubleCrystalBall{T}, p::Real) where {T <: Re
     return d.μ + d.σ * x̂
 end
 
-# Export the new distribution
-export DoubleCrystalBall
+Distributions.maximum(d::DoubleCrystalBall{T}) where {T <: Real} = T(Inf)
+Distributions.minimum(d::DoubleCrystalBall{T}) where {T <: Real} = T(-Inf)
