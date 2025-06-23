@@ -35,7 +35,14 @@ Once installed, you can begin using `DistributionsHEP.jl` by importing the packa
 
 ```julia
 using DistributionsHEP
+
+c0, c1, c2 = 1.0, 0.2, 0.3
+a, b = 0.0, 10.0
+
+cheb = Chebyshev([c0, c1, c2], a, b) # default values for [a,b] are [-1,1]
 ```
+
+The rest of the interface (`pdf`, `cdf`, `rand`, etc.) follows the standard `Distributions.jl` API.
 
 ## Contributing
 
