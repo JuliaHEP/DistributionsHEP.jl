@@ -88,17 +88,12 @@ end
 
 function Distributions.pdf(d::DoubleCrystalBall{T}, x::Real) where {T <: Real}
     x̂ = (x - d.μ) / d.σ
-
-    if x̂ < -d.αL
-        # Left power-law tail
-        return d.norm_const * d.AL_const * (d.BL_const - x̂)^(-d.nL)
-    elseif x̂ > d.αR
-        # Right power-law tail
-        return d.norm_const * d.AR_const * (d.BR_const + x̂)^(-d.nR)
-    else
-        # Gaussian core
-        return d.norm_const * exp(-x̂^2 / 2)
-    end
+    # Left power-law tail
+    x̂ < -d.αL && return d.norm_const * d.AL_const * (d.BL_const - x̂)^(-d.nL)
+    # Gaussian core
+    x̂ < d.αR && return d.norm_const * exp(-x̂^2 / 2)
+    # Right power-law tail
+    return d.norm_const * d.AR_const * (d.BR_const + x̂)^(-d.nR)
 end
 
 function Distributions.cdf(d::DoubleCrystalBall{T}, x::Real) where {T <: Real}
