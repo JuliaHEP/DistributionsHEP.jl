@@ -1,6 +1,3 @@
-using SpecialFunctions
-using Polynomials
-
 struct Chebyshev <: ContinuousUnivariateDistribution
     polynomial::ChebyshevT{Float64, :x}
     integral::Float64
@@ -19,18 +16,15 @@ Distributions.maximum(d::Chebyshev) = d.b
 Distributions.minimum(d::Chebyshev) = d.a
 
 function Distributions.pdf(d::Chebyshev, x::Real)
-    x′ = (2x - d.a - d.b) / (d.b - d.a)
-    d.polynomial(x′) / (d.integral * (d.b - d.a) / 2)
+    d.polynomial(x) / d.integral
 end
 
 function Distributions.pdf(d::Chebyshev, x::AbstractArray{<:Real})
-    x′ = (2x .- d.a .- d.b) ./ (d.b - d.a)
-    d.polynomial.(x′) / (d.integral * (d.b - d.a) / 2)
+    d.polynomial.(x) ./ d.integral
 end
 
 function Distributions.cdf(d::Chebyshev, x::Real)
-    x′ = (2x - d.a - d.b) / (d.b - d.a)
-    integrate(d.polynomial, -1.0, x′) / d.integral
+    integrate(d.polynomial, -1.0, x) / d.integral
 end
 
 function Base.rand(rng::AbstractRNG, d::Chebyshev)
@@ -39,6 +33,6 @@ function Base.rand(rng::AbstractRNG, d::Chebyshev)
     while rand(rng) > d.polynomial(x) / max
         x = rand(rng, Uniform(-1.0, 1.0))
     end
-    return (x * (d.b - d.a) + d.a + d.b) / 2
+    return x
 end
 

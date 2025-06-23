@@ -1,7 +1,8 @@
 module DistributionsHEP
 
-using Distributions
 using SpecialFunctions
+using Distributions
+using Polynomials
 using Random
 
 import Distributions: @check_args
