@@ -8,7 +8,7 @@ struct Chebyshev <: ContinuousUnivariateDistribution
     end
 end
 
-Chebyshev(coeffs, a::T, b::T) where {T <: Real} = Chebyshev(coeffs) * (b - a) / 2 + (a + b) / 2
+transformed_chebychev(coeffs, a::T, b::T) where {T <: Real} = Chebyshev(coeffs) * (b - a) / 2 + (a + b) / 2
 
 Distributions.minimum(d::Chebyshev) = -1.0
 Distributions.maximum(d::Chebyshev) = 1.0
