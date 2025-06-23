@@ -94,9 +94,8 @@ end
 function Distributions.cdf(d::DoubleCrystalBall{T}, x::Real) where {T <: Real}
     x̂ = (x - d.μ) / d.σ
 
-    # CDF values at transition points (from mathematical derivation)
-    cdf_at_minus_alphaL = d.norm_const * d.nL / d.αL / (d.nL - 1) * exp(-d.αL^2 / 2)
-    cdf_at_plus_alphaR = cdf_at_minus_alphaL + d.norm_const * d.σ * sqrt(T(π) / 2) * (erf(d.αR / sqrt(T(2))) + erf(d.αL / sqrt(T(2))))
+    # Compute transition CDF values using helper function
+    cdf_at_minus_alphaL, cdf_at_plus_alphaR = _compute_transition_cdf_values(d)
 
     if x̂ <= -d.αL
         # CDF for the left power-law tail (x̂ ≤ -αL)
