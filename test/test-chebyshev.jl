@@ -7,8 +7,8 @@ using Test
 
 # Create test objects outside of test statements
 d_constant = Chebyshev([1.0, 0.0, 0.0])  # Constant polynomial
-d_linear = transformed_chebychev([1.0, 1.0, 0.0], -1, 3)  # Linear polynomial
-d_quadratic = transformed_chebychev([2.0, 0.0, 1.0], -2.0, 2.0)  # Quadratic polynomial
+d_linear = Chebyshev([1.0, 1.0, 0.0], -1, 3)  # Linear polynomial
+d_quadratic = Chebyshev([2.0, 0.0, 1.0], -2.0, 2.0)  # Quadratic polynomial
 
 # # for visual inspection
 # all polynomials positive in the range of definition
