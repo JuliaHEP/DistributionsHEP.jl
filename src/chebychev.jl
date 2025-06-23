@@ -39,4 +39,3 @@ function Base.rand(rng::AbstractRNG, d::Chebyshev)
     end
     return (x * (d.b - d.a) + d.a + d.b) / 2
 end
-

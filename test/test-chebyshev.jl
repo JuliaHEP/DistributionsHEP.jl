@@ -45,11 +45,13 @@ end
     @test pdf(d_constant, -0.5) ≈ pdf_val
 
     # Check normalization
-    numerical_integral = quadgk(x -> pdf(d_constant, x), minimum(d_constant), maximum(d_constant))[1]
+    numerical_integral =
+        quadgk(x -> pdf(d_constant, x), minimum(d_constant), maximum(d_constant))[1]
     @test isapprox(numerical_integral, 1.0; atol = 1e-6)
 
     # Check normalization
-    numerical_integral = quadgk(x -> pdf(d_quadratic, x), minimum(d_quadratic), maximum(d_quadratic))[1]
+    numerical_integral =
+        quadgk(x -> pdf(d_quadratic, x), minimum(d_quadratic), maximum(d_quadratic))[1]
     @test isapprox(numerical_integral, 1.0; atol = 1e-6)
 end
 
@@ -104,4 +106,3 @@ d = Chebyshev([1.0, 0.0, 1.0], -2.0, 2.0)
     @test minimum(d) == support(d).lb
     @test maximum(d) == support(d).ub
 end
-
