@@ -12,7 +12,7 @@ Generally, you don't have to implement every API method listed in the documentat
 - **CrystalBall**: One-sided Crystal Ball distribution with power-law tail
 - **DoubleCrystalBall**: Two-sided Crystal Ball distribution with power-law tails on both sides of a Gaussian core
 
-Detailed mathematical derivations for the Crystal Ball and Double Crystal Ball distributions are found in `docs/CrystalBallMath.md`, and `docs/DoubleCrystalBallMath.md`.
+Mathematical derivations for both the one-sided and two-sided Crystal Ball distributions are found in `docs/CrystalBallMath.md`.
 
 ## Installation
 
