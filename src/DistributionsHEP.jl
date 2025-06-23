@@ -1,8 +1,6 @@
 module DistributionsHEP
 
 using Distributions
-using Distributions.Statistics
-using Distributions.StatsBase
 using SpecialFunctions
 using Random
 
