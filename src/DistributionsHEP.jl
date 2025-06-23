@@ -14,7 +14,6 @@ export pdf, cdf, quantile, support
 export mean, std, var, skewness, kurtosis
 
 export Chebyshev
-export StandardChebyshev
 include("chebyshev.jl")
 
 export ArgusBG
