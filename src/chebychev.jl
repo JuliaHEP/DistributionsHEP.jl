@@ -1,19 +1,17 @@
 struct Chebyshev <: ContinuousUnivariateDistribution
     polynomial::ChebyshevT{Float64, :x}
     integral::Float64
-    a::Float64
-    b::Float64
     function Chebyshev(coeffs)
         polynomial = ChebyshevT(coeffs)
         integral = integrate(polynomial)
-        new(polynomial, (integral(1.0) - integral(-1.0)), -1, 1)
+        new(polynomial, (integral(1.0) - integral(-1.0)))
     end
 end
 
 Chebyshev(coeffs, a::T, b::T) where {T <: Real} = Chebyshev(coeffs) * (b - a) / 2 + (a + b) / 2
 
-Distributions.maximum(d::Chebyshev) = d.b
-Distributions.minimum(d::Chebyshev) = d.a
+Distributions.minimum(d::Chebyshev) = -1.0
+Distributions.maximum(d::Chebyshev) = 1.0
 
 function Distributions.pdf(d::Chebyshev, x::Real)
     d.polynomial(x) / d.integral
