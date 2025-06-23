@@ -13,17 +13,11 @@ Chebyshev(coeffs, a::T, b::T) where {T <: Real} = Chebyshev(coeffs) * (b - a) / 
 Distributions.minimum(d::Chebyshev) = -1.0
 Distributions.maximum(d::Chebyshev) = 1.0
 
-function Distributions.pdf(d::Chebyshev, x::Real)
+Distributions.pdf(d::Chebyshev, x::Real) =
     d.polynomial(x) / d.integral
-end
 
-function Distributions.pdf(d::Chebyshev, x::AbstractArray{<:Real})
-    d.polynomial.(x) ./ d.integral
-end
-
-function Distributions.cdf(d::Chebyshev, x::Real)
+Distributions.cdf(d::Chebyshev, x::Real) =
     integrate(d.polynomial, -1.0, x) / d.integral
-end
 
 function Base.rand(rng::AbstractRNG, d::Chebyshev)
     max = sum(abs, d.polynomial)   # estimate the maximum of the polynomial
