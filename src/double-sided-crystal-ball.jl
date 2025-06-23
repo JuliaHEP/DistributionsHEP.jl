@@ -76,6 +76,16 @@ struct DoubleCrystalBall{T <: Real} <: ContinuousUnivariateDistribution
     end
 end
 
+# Helper function to compute CDF values at transition points
+function _compute_transition_cdf_values(d::DoubleCrystalBall{T}) where {T <: Real}
+    # CDF values at transition points (from mathematical derivation)
+    cdf_at_minus_alphaL = d.norm_const * d.nL / d.αL / (d.nL - 1) * exp(-d.αL^2 / 2)
+    cdf_at_plus_alphaR = cdf_at_minus_alphaL + d.norm_const * d.σ * sqrt(T(π) / 2) * (erf(d.αR / sqrt(T(2))) + erf(d.αL / sqrt(T(2))))
+
+    return cdf_at_minus_alphaL, cdf_at_plus_alphaR
+end
+
+
 function Distributions.pdf(d::DoubleCrystalBall{T}, x::Real) where {T <: Real}
     x̂ = (x - d.μ) / d.σ
 
@@ -94,7 +104,7 @@ end
 function Distributions.cdf(d::DoubleCrystalBall{T}, x::Real) where {T <: Real}
     x̂ = (x - d.μ) / d.σ
 
-    # Compute transition CDF values using helper function
+    # CDF values at transition points (from mathematical derivation)
     cdf_at_minus_alphaL, cdf_at_plus_alphaR = _compute_transition_cdf_values(d)
 
     if x̂ <= -d.αL
@@ -122,8 +132,7 @@ function Distributions.quantile(d::DoubleCrystalBall{T}, p::Real) where {T <: Re
     p == one(T) && return T(Inf)
 
     # CDF values at transition points (same as in CDF function)
-    cdf_at_minus_alphaL = d.norm_const * d.nL / d.αL / (d.nL - 1) * exp(-d.αL^2 / 2)
-    cdf_at_plus_alphaR = cdf_at_minus_alphaL + d.norm_const * d.σ * sqrt(T(π) / 2) * (erf(d.αR / sqrt(T(2))) + erf(d.αL / sqrt(T(2))))
+    cdf_at_minus_alphaL, cdf_at_plus_alphaR = _compute_transition_cdf_values(d)
 
     x̂ = zero(T) # Scaled quantile score
 
