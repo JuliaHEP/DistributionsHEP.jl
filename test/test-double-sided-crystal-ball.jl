@@ -9,7 +9,10 @@ function check_quantile_accuracy(d, ps; atol = 1e-8)
     for p in ps
         q = quantile(d, p)
         cdf_val = cdf(d, q)
-        @test isapprox(cdf_val, p; atol = atol) || @warn "Quantile test failed" p q cdf_val
+        @test isapprox(cdf_val, p; atol = atol)
+        if !isapprox(cdf_val, p; atol = atol)
+            @warn "Quantile test failed" p q cdf_val
+        end
     end
 end
 
