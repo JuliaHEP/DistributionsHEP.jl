@@ -15,9 +15,9 @@ to model various lossy processes with power-law tails on both sides of a Gaussia
 
 The probability density function is defined as:
 ````math
-    f(x; μ, σ, α_L, n_L, α_R, n_R) = N * A_L * (B_L - x̂)^(-n_L)     for x̂ < -α_L
-                                   = N * exp(-(x̂^2)/2)               for -α_L ≤ x̂ ≤ α_R
-                                   = N * A_R * (B_R + x̂)^(-n_R)     for x̂ > α_R
+    f(x; μ, σ, α_L, n_L, α_R, n_R) = N A_L (B_L - x̂)^{-n_L}     for x̂ < -α_L
+                                   = N exp(-(x̂^2)/2)            for -α_L ≤ x̂ ≤ α_R
+                                   = N A_R (B_R + x̂)^{-n_R}     for x̂ > α_R
 ````
 where x̂ = (x - μ) / σ.
 The parameters A_L, B_L, A_R, B_R are derived from α_L, n_L, α_R, n_R to ensure continuity 
@@ -36,7 +36,7 @@ of the function and its first derivative. N is a normalization constant.
 using DistributionsHEP
 using Plots
 
-d = DoubleCrystalBall(μ=0.0, σ=1.0, αL=1.5, nL=2.0, αR=2.0, nR=3.0)
+d = DoubleCrystalBall(0.0, 1.0, 1.5, 2.0, 2.0, 3.0)  # μ, σ, αL, nL, αR, nR
 plot(-5, 5, x->pdf(d, x))
 ```
 """

@@ -13,8 +13,8 @@ It consists of a Gaussian core and a power-law tail on one side (typically the l
 
 The probability density function is defined as:
 ````math
-    f(x; μ, σ, α, n) = N * exp(-(x̂^2)/2)           for x̂ > -α
-                    = N * A * (B - x̂)^(-n)         for x̂ ≤ -α
+    f(x; μ, σ, α, n) = N exp(-(x̂^2)/2)      for x̂ > -α
+                    = N  A (B - x̂)^{-n}     for x̂ ≤ -α
 ````
 where x̂ = (x - μ) / σ.
 The parameters A and B are derived from α and n to ensure continuity of the function and its first derivative.
@@ -35,7 +35,7 @@ The struct also stores precomputed constants `norm_const` (N), `A_const` (A), an
 using DistributionsHEP
 using Plots
 
-d = CrystalBall(μ=0.0, σ=1.0, α=2.0, n=3.2)
+d = CrystalBall(0.0, 1.0, 2.0, 3.2)  # μ, σ, α, n
 plot(-2, 4, x->pdf(d, x))
 """
 struct CrystalBall{T <: Real} <: ContinuousUnivariateDistribution
