@@ -53,7 +53,6 @@ struct CrystalBall{T <: Real} <: ContinuousUnivariateDistribution
         # Calculate normalization constant
         # The normalization should be: N = 1 / (C + D_val)
         # where C is the tail contribution and D_val is the Gaussian core contribution
-        # Note: σ scaling is handled in the CDF calculation, not in the normalization constant
         C = n / α / (n - 1) * exp(-α^2 / 2)
         D_val = sqrt(T(π) / 2) * (one(T) + erf(α / sqrt(T(2))))
         N = one(T) / (C + D_val)
