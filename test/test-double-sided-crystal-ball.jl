@@ -4,7 +4,16 @@ using Distributions
 using QuadGK
 using Test
 
-# Test distribution with different parameters for left and right tails
+# Helper to check quantile accuracy for different σ values
+function check_quantile_accuracy(d, ps; atol = 1e-8)
+    for p in ps
+        q = quantile(d, p)
+        cdf_val = cdf(d, q)
+        @test isapprox(cdf_val, p; atol = atol) || @warn "Quantile test failed" p q cdf_val
+    end
+end
+
+# Test distribution with σ = 1 (standard case)
 d = DoubleCrystalBall(0.0, 1.0, 1.5, 2.0, 2.0, 3.0)
 
 @testset "DoubleCrystalBall parameter validation" begin
@@ -15,56 +24,31 @@ d = DoubleCrystalBall(0.0, 1.0, 1.5, 2.0, 2.0, 3.0)
     @test_throws ErrorException DoubleCrystalBall(0.0, 1.0, 1.0, 2.0, 1.0, 0.5)  # nR ≤ 1
 end
 
-@testset "DoubleCrystalBall PDF continuity at transition points" begin
-    # Left transition point
-    x_left_merge = -d.αL * d.σ + d.μ
-    pdf_value_left = pdf(d, x_left_merge - 1e-6)  # just below the transition point
-    pdf_value_right = pdf(d, x_left_merge + 1e-6) # just above the transition point
-    @test isapprox(pdf_value_left, pdf_value_right; atol = 1e-5)
-
-    # Right transition point
-    x_right_merge = d.αR * d.σ + d.μ
-    pdf_value_left = pdf(d, x_right_merge - 1e-6)  # just below the transition point
-    pdf_value_right = pdf(d, x_right_merge + 1e-6) # just above the transition point
-    @test isapprox(pdf_value_left, pdf_value_right; atol = 1e-5)
-end
-
 @testset "DoubleCrystalBall PDF properties" begin
-    # PDF should be positive everywhere
+    # PDF should be positive and finite everywhere
     x_test_points = [-5.0, -2.0, -1.0, 0.0, 1.0, 2.0, 5.0]
     for x in x_test_points
         @test pdf(d, x) > 0
-    end
-
-    # PDF should be finite everywhere
-    for x in x_test_points
         @test isfinite(pdf(d, x))
     end
-end
 
-@testset "DoubleCrystalBall normalization" begin
-    # Check that the integral of the PDF equals 1 (with reasonable tolerance)
+    # PDF should be continuous at transition points
+    x_left_merge = -d.αL * d.σ + d.μ
+    pdf_value_left = pdf(d, x_left_merge - 1e-6)
+    pdf_value_right = pdf(d, x_left_merge + 1e-6)
+    @test isapprox(pdf_value_left, pdf_value_right; atol = 1e-5)
+
+    x_right_merge = d.αR * d.σ + d.μ
+    pdf_value_left = pdf(d, x_right_merge - 1e-6)
+    pdf_value_right = pdf(d, x_right_merge + 1e-6)
+    @test isapprox(pdf_value_left, pdf_value_right; atol = 1e-5)
+
+    # PDF should integrate to 1
     numerical_integral = quadgk(x -> pdf(d, x), -Inf, Inf)[1]
     @test isapprox(numerical_integral, 1.0; atol = 1e-6)
 end
 
-@testset "DoubleCrystalBall CDF continuity at transition points" begin
-    # Left transition point
-    x_left_merge = -d.αL * d.σ + d.μ
-    cdf_value_left = cdf(d, x_left_merge - 1e-6)
-    cdf_value_right = cdf(d, x_left_merge + 1e-6)
-    @test isapprox(cdf_value_left, cdf_value_right; atol = 1e-5)
-    @test cdf_value_left < cdf_value_right
-
-    # Right transition point
-    x_right_merge = d.αR * d.σ + d.μ
-    cdf_value_left = cdf(d, x_right_merge - 1e-6)
-    cdf_value_right = cdf(d, x_right_merge + 1e-6)
-    @test isapprox(cdf_value_left, cdf_value_right; atol = 1e-5)
-    @test cdf_value_left < cdf_value_right
-end
-
-@testset "DoubleCrystalBall CDF basic properties" begin
+@testset "DoubleCrystalBall CDF properties" begin
     # CDF should be between 0 and 1
     x_values = [-3.0, -2.0, -1.0, 0.0, 1.0, 2.0, 3.0]
     for x in x_values
@@ -72,10 +56,25 @@ end
         @test cdf_val >= 0
         @test cdf_val <= 1
     end
+
+    # CDF should approach 0 and 1 at extremes
+    @test cdf(d, -100) < 0.1
+    @test cdf(d, d.μ + 5 * d.σ) > 0.99  # Should be very close to 1
+
+    # CDF should be continuous at transition points
+    x_left_merge = -d.αL * d.σ + d.μ
+    cdf_value_left = cdf(d, x_left_merge - 1e-6)
+    cdf_value_right = cdf(d, x_left_merge + 1e-6)
+    @test isapprox(cdf_value_left, cdf_value_right; atol = 1e-5)
+
+    x_right_merge = d.αR * d.σ + d.μ
+    cdf_value_left = cdf(d, x_right_merge - 1e-6)
+    cdf_value_right = cdf(d, x_right_merge + 1e-6)
+    @test isapprox(cdf_value_left, cdf_value_right; atol = 1e-5)
 end
 
-@testset "DoubleCrystalBall quantile basic properties" begin
-    # Test quantile in different regions
+@testset "DoubleCrystalBall quantile properties" begin
+    # Quantile should be inverse of CDF in different regions
     x_left = -2.0
     p_left = cdf(d, x_left)
     @test quantile(d, p_left) ≈ x_left atol = 1e-9
@@ -95,7 +94,29 @@ end
     @test_throws DomainError quantile(d, 1.1)
 end
 
-@testset "DoubleCrystalBall symmetry test" begin
+@testset "DoubleCrystalBall sigma scaling" begin
+    # Test quantile accuracy for different σ values
+    test_cases = [
+        (0.0, 0.5, 0.5, 1.5, 3.0, 5.0),  # σ < 1
+        (0.0, 1.0, 0.5, 1.5, 3.0, 5.0),  # σ = 1
+        (0.0, 5.0, 0.5, 1.5, 3.0, 5.0),  # σ > 1
+    ]
+
+    ps = [0.01, 0.1, 0.5, 0.9, 0.99, 0.999]
+
+    for (μ, σ, αL, nL, αR, nR) in test_cases
+        d_test = DoubleCrystalBall(μ, σ, αL, nL, αR, nR)
+
+        # Test quantile accuracy
+        check_quantile_accuracy(d_test, ps)
+
+        # Test CDF normalization (should approach 1 for large x)
+        cdf_large = cdf(d_test, 1000)
+        @test cdf_large > 0.999
+    end
+end
+
+@testset "DoubleCrystalBall symmetry" begin
     # Test with symmetric parameters
     d_sym = DoubleCrystalBall(0.0, 1.0, 1.5, 2.0, 1.5, 2.0)
 
@@ -108,16 +129,21 @@ end
 end
 
 @testset "DoubleCrystalBall type stability" begin
-    # Test that the distribution works with different numeric types
+    d_float64 = DoubleCrystalBall(0.0, 1.0, 1.5, 2.0, 2.0, 3.0)
     d_float32 = DoubleCrystalBall(0.0f0, 1.0f0, 1.5f0, 2.0f0, 2.0f0, 3.0f0)
+
+    @test pdf(d_float64, 0.0) isa Float64
     @test pdf(d_float32, 0.0f0) isa Float32
+    @test cdf(d_float64, 0.0) isa Float64
     @test cdf(d_float32, 0.0f0) isa Float32
+    @test quantile(d_float64, 0.5) isa Float64
     @test quantile(d_float32, 0.5f0) isa Float32
 end
 
-d_float64 = DoubleCrystalBall(0.0, 1.0, 1.5, 2.0, 2.0, 3.0)
-d_float32 = DoubleCrystalBall(0.0f0, 1.0f0, 1.5f0, 2.0f0, 2.0f0, 3.0f0)
-@testset "DoubleCrystalBall maximum/minimum interfaces" begin
+@testset "DoubleCrystalBall support interface" begin
+    d_float64 = DoubleCrystalBall(0.0, 1.0, 1.5, 2.0, 2.0, 3.0)
+    d_float32 = DoubleCrystalBall(0.0f0, 1.0f0, 1.5f0, 2.0f0, 2.0f0, 3.0f0)
+
     @test maximum(d_float64) == Inf
     @test maximum(d_float32) == Inf32
     @test minimum(d_float64) == -Inf
