@@ -16,14 +16,16 @@ The probability density function (PDF) is:
 \[
     f(x; \mu, \sigma, \alpha, n) =
     \begin{cases}
-        N \cdot \exp\left(-\frac{\hat{x}^2}{2}\right) & \text{for } \hat{x} > -\alpha \\
-        N \cdot A \cdot (B - \hat{x})^{-n} & \text{for } \hat{x} \leq -\alpha
+        N \cdot \exp\left(-\frac{\hat{x}^2}{2}\right) \frac{1}{\sigma} & \text{for } \hat{x} > -\alpha \\
+        N \cdot A \cdot (B - \hat{x})^{-n} \frac{1}{\sigma} & \text{for } \hat{x} \leq -\alpha
     \end{cases}
 \]
 
 where:
 - \( N \) is the normalization constant
 - \( A \) and \( B \) are tail parameters
+
+**Note**: The \( \frac{1}{\sigma} \) factor is necessary because the PDF is defined in terms of the normalized variable \( \hat{x} = (x - \mu)/\sigma \), but the probability density must integrate to 1 over the original variable \( x \).
 
 ## Tail Parameters
 To ensure continuity and differentiability at the transition point \( \hat{x} = -\alpha \):
@@ -45,8 +47,10 @@ D = \sqrt{\frac{\pi}{2}} \left[1 + \operatorname{erf}\left(\frac{\alpha}{\sqrt{2
 \]
 Then
 \[
-N = \frac{1}{\sigma (C + D)}
+N = \frac{1}{C + D}
 \]
+
+**Note**: The normalization constant \( N \) is independent of \( \sigma \). The \( \sigma \) scaling is handled in the PDF definition through the \( 1/\sigma \) factor.
 
 ## CDF
 Let
@@ -59,7 +63,7 @@ The cumulative distribution function (CDF) is:
 F(x) =
 \begin{cases}
     N A \frac{(B - \hat{x})^{1-n}}{n-1} & \text{for } \hat{x} \leq -\alpha \\
-    F_{-\alpha} + N \sigma \sqrt{\frac{\pi}{2}} \left[ \operatorname{erf}\left(\frac{\hat{x}}{\sqrt{2}}\right) + \operatorname{erf}\left(\frac{\alpha}{\sqrt{2}}\right) \right] & \text{for } \hat{x} > -\alpha
+    F_{-\alpha} + N \sqrt{\frac{\pi}{2}} \left[ \operatorname{erf}\left(\frac{\hat{x}}{\sqrt{2}}\right) + \operatorname{erf}\left(\frac{\alpha}{\sqrt{2}}\right) \right] & \text{for } \hat{x} > -\alpha
 \end{cases}
 \]
 
@@ -72,7 +76,7 @@ Let \( p \in [0, 1] \).
 \]
 - If \( p > F_{-\alpha} \):
 \[
-    \hat{x} = \sqrt{2} \operatorname{erf}^{-1}\left( \frac{p - F_{-\alpha}}{N \sigma \sqrt{\pi/2}} - \operatorname{erf}\left(\frac{\alpha}{\sqrt{2}}\right) \right)
+    \hat{x} = \sqrt{2} \operatorname{erf}^{-1}\left( \frac{p - F_{-\alpha}}{N \sqrt{\pi/2}} - \operatorname{erf}\left(\frac{\alpha}{\sqrt{2}}\right) \right)
 \]
 
 Then \( x = \mu + \sigma \hat{x} \).
@@ -96,11 +100,13 @@ The probability density function is defined piecewise:
 \[
 f(x) =
 \begin{cases}
-    N A_L (B_L - \hat{x})^{-n_L} & \text{for } \hat{x} < -\alpha_L \\
-    N \exp\left(-\frac{\hat{x}^2}{2}\right) & \text{for } -\alpha_L \leq \hat{x} \leq \alpha_R \\
-    N A_R (B_R + \hat{x})^{-n_R} & \text{for } \hat{x} > \alpha_R
+    N A_L (B_L - \hat{x})^{-n_L} \frac{1}{\sigma} & \text{for } \hat{x} < -\alpha_L \\
+    N \exp\left(-\frac{\hat{x}^2}{2}\right) \frac{1}{\sigma} & \text{for } -\alpha_L \leq \hat{x} \leq \alpha_R \\
+    N A_R (B_R + \hat{x})^{-n_R} \frac{1}{\sigma} & \text{for } \hat{x} > \alpha_R
 \end{cases}
 \]
+
+**Note**: The \( \frac{1}{\sigma} \) factor is necessary because the PDF is defined in terms of the normalized variable \( \hat{x} = (x - \mu)/\sigma \), but the probability density must integrate to 1 over the original variable \( x \).
 
 ## Tail Parameters (Continuity and Differentiability Conditions)
 
@@ -132,11 +138,18 @@ Following the same logic:
 
 The normalization constant \( N \) is determined by requiring \( \int_{-\infty}^{\infty} f(x) dx = 1 \).
 
+Note: The PDF is defined in terms of the normalized variable \( \hat{x} = (x - \mu)/\sigma \), but the integral is over \( x \). The transformation \( dx = \sigma d\hat{x} \) must be properly accounted for.
+
 Breaking the integral into three parts:
 
 ### Left Tail Integral (\( \hat{x} < -\alpha_L \))
 \[
-\int_{-\infty}^{-\alpha_L} N A_L (B_L - \hat{x})^{-n_L} d\hat{x} = N A_L \int_{-\infty}^{-\alpha_L} (B_L - \hat{x})^{-n_L} d\hat{x}
+\int_{-\infty}^{-\alpha_L} N A_L (B_L - \hat{x})^{-n_L} \frac{1}{\sigma} dx = \frac{N A_L}{\sigma} \int_{-\infty}^{-\alpha_L} (B_L - \hat{x})^{-n_L} dx
+\]
+
+Using \( dx = \sigma d\hat{x} \):
+\[
+= N A_L \int_{-\infty}^{-\alpha_L} (B_L - \hat{x})^{-n_L} d\hat{x}
 \]
 
 Let \( u = B_L - \hat{x} \), then \( du = -d\hat{x} \):
@@ -151,12 +164,22 @@ Substituting \( B_L = \frac{n_L}{\alpha_L} - \alpha_L \):
 
 ### Gaussian Core Integral (\( -\alpha_L \leq \hat{x} \leq \alpha_R \))
 \[
-\int_{-\alpha_L}^{\alpha_R} N \exp\left(-\frac{\hat{x}^2}{2}\right) d\hat{x} = N \sqrt{2\pi} \frac{1}{2} \left[ \operatorname{erf}\left(\frac{\alpha_R}{\sqrt{2}}\right) + \operatorname{erf}\left(\frac{\alpha_L}{\sqrt{2}}\right) \right]
+\int_{-\alpha_L}^{\alpha_R} N \exp\left(-\frac{\hat{x}^2}{2}\right) \frac{1}{\sigma} dx = \frac{N}{\sigma} \int_{-\alpha_L}^{\alpha_R} \exp\left(-\frac{\hat{x}^2}{2}\right) dx
+\]
+
+Using \( dx = \sigma d\hat{x} \):
+\[
+= N \int_{-\alpha_L}^{\alpha_R} \exp\left(-\frac{\hat{x}^2}{2}\right) d\hat{x} = N \sqrt{2\pi} \frac{1}{2} \left[ \operatorname{erf}\left(\frac{\alpha_R}{\sqrt{2}}\right) + \operatorname{erf}\left(\frac{\alpha_L}{\sqrt{2}}\right) \right]
 \]
 
 ### Right Tail Integral (\( \hat{x} > \alpha_R \))
 \[
-\int_{\alpha_R}^{\infty} N A_R (B_R + \hat{x})^{-n_R} d\hat{x} = N A_R \int_{\alpha_R}^{\infty} (B_R + \hat{x})^{-n_R} d\hat{x}
+\int_{\alpha_R}^{\infty} N A_R (B_R + \hat{x})^{-n_R} \frac{1}{\sigma} dx = \frac{N A_R}{\sigma} \int_{\alpha_R}^{\infty} (B_R + \hat{x})^{-n_R} dx
+\]
+
+Using \( dx = \sigma d\hat{x} \):
+\[
+= N A_R \int_{\alpha_R}^{\infty} (B_R + \hat{x})^{-n_R} d\hat{x}
 \]
 
 Let \( u = B_R + \hat{x} \), then \( du = d\hat{x} \):
@@ -176,12 +199,14 @@ Substituting \( B_R = \frac{n_R}{\alpha_R} - \alpha_R \):
 
 Therefore:
 \[
-N = \frac{1}{\sigma \left[ C_L + D + C_R \right]}
+N = \frac{1}{C_L + D + C_R}
 \]
 where:
 - \( C_L = \frac{n_L}{\alpha_L (n_L - 1)} \exp\left(-\frac{\alpha_L^2}{2}\right) \)
 - \( D = \sqrt{\frac{\pi}{2}} \left( \operatorname{erf}\left(\frac{\alpha_R}{\sqrt{2}}\right) + \operatorname{erf}\left(\frac{\alpha_L}{\sqrt{2}}\right) \right) \)
 - \( C_R = \frac{n_R}{\alpha_R (n_R - 1)} \exp\left(-\frac{\alpha_R^2}{2}\right) \)
+
+**Important**: The normalization constant \( N \) is independent of \( \sigma \). The \( \sigma \) scaling is handled in the PDF definition through the \( 1/\sigma \) factor.
 
 ## CDF Derivation
 
@@ -196,7 +221,7 @@ F_L = \int_{-\infty}^{-\alpha_L} f(x) dx = N A_L \frac{(B_L + \alpha_L)^{1-n_L}}
 
 **CDF at right transition (\( \hat{x} = \alpha_R \)):
 \[
-F_R = F_L + \int_{-\alpha_L}^{\alpha_R} f(x) dx = F_L + N \sigma \sqrt{\frac{\pi}{2}} \left( \operatorname{erf}\left(\frac{\alpha_R}{\sqrt{2}}\right) + \operatorname{erf}\left(\frac{\alpha_L}{\sqrt{2}}\right) \right)
+F_R = F_L + \int_{-\alpha_L}^{\alpha_R} f(x) dx = F_L + N \sqrt{\frac{\pi}{2}} \left( \operatorname{erf}\left(\frac{\alpha_R}{\sqrt{2}}\right) + \operatorname{erf}\left(\frac{\alpha_L}{\sqrt{2}}\right) \right)
 \]
 
 ### CDF Formula
@@ -205,7 +230,7 @@ F_R = F_L + \int_{-\alpha_L}^{\alpha_R} f(x) dx = F_L + N \sigma \sqrt{\frac{\pi
 F(x) =
 \begin{cases}
     N A_L \frac{(B_L - \hat{x})^{1-n_L}}{n_L - 1} & \text{for } \hat{x} < -\alpha_L \\
-    F_L + N \sigma \sqrt{\frac{\pi}{2}} \left[ \operatorname{erf}\left(\frac{\hat{x}}{\sqrt{2}}\right) + \operatorname{erf}\left(\frac{\alpha_L}{\sqrt{2}}\right) \right] & \text{for } -\alpha_L \leq \hat{x} \leq \alpha_R \\
+    F_L + N \sqrt{\frac{\pi}{2}} \left[ \operatorname{erf}\left(\frac{\hat{x}}{\sqrt{2}}\right) + \operatorname{erf}\left(\frac{\alpha_L}{\sqrt{2}}\right) \right] & \text{for } -\alpha_L \leq \hat{x} \leq \alpha_R \\
     F_R + N A_R \frac{(B_R + \hat{x})^{1-n_R} - (B_R + \alpha_R)^{1-n_R}}{n_R - 1} & \text{for } \hat{x} > \alpha_R
 \end{cases}
 \]
@@ -252,4 +277,4 @@ Q(p) =
 
 ### Transition Point CDF Values
 - \( F_L = N \frac{n_L}{\alpha_L (n_L - 1)} \exp\left(-\frac{\alpha_L^2}{2}\right) \)
-- \( F_R = F_L + N \sigma \sqrt{\frac{\pi}{2}} \left( \operatorname{erf}\left(\frac{\alpha_R}{\sqrt{2}}\right) + \operatorname{erf}\left(\frac{\alpha_L}{\sqrt{2}}\right) \right) \) 
+- \( F_R = F_L + N \sqrt{\frac{\pi}{2}} \left( \operatorname{erf}\left(\frac{\alpha_R}{\sqrt{2}}\right) + \operatorname{erf}\left(\frac{\alpha_L}{\sqrt{2}}\right) \right) \) 
