@@ -26,6 +26,7 @@ d_quadratic = Chebyshev([2.0, 0.0, 1.0], -2.0, 2.0)  # Quadratic polynomial
 #     plot!()
 # end
 
+@testset "Chebyshev Distribution" verbose=true begin
 @testset "Construction" begin
     @test minimum(d_constant) == support(d_constant).lb == -1.0
     @test maximum(d_constant) == support(d_constant).ub == 1.0
@@ -84,4 +85,5 @@ end
     # Test that samples follow the distribution (basic check)
     @test mean(samples) > -2.0
     @test mean(samples) < 2.0
+end
 end

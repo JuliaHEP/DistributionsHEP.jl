@@ -1,5 +1,8 @@
 using Test
 
-include("test-chebyshev.jl")
-include("test-crystalball.jl")
-include("test-double-sided-crystal-ball.jl")
+@testset "DistributionsHEP tests" verbose=true begin 
+    include("test-chebyshev.jl")
+    include("test-argusBG.jl")
+    include("test-crystalball.jl")
+    include("test-double-sided-crystal-ball.jl")
+end

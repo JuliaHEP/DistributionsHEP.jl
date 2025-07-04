@@ -43,7 +43,7 @@ function ArgusBG(
     b::T = m₀;
     check_args::Bool = true,
 ) where {T<:Real}
-    @check_args ArgusBG (m₀, m₀ > zero(m₀)) (c, c > zero(c)) (p, p >= -1) (a, a < m₀) (
+    @check_args ArgusBG (m₀, m₀ > zero(m₀)) (c, c < zero(c)) (p, p >= -1) (a, a < m₀) (
         b,
         b > a,
     )
@@ -63,53 +63,43 @@ function F_argus(m, m₀, c, p)
     return isreal(w) ? real(w) : zero(m)
 end
 
+Distributions.maximum(d::ArgusBG{T}) where {T<:Real} = d.b
+Distributions.minimum(d::ArgusBG{T}) where {T<:Real} = d.a
+
 #### Parameters
 
-scale(d::ArgusBG) = d.m₀
-shape(d::ArgusBG) = d.c
+Distributions.scale(d::ArgusBG) = d.m₀
+Distributions.shape(d::ArgusBG) = d.c
 
-params(d::ArgusBG) = (d.m₀, d.c, d.p)
-partype(::ArgusBG{T}) where {T<:Real} = T
-
-#### Statistics
-
-mean(d::ArgusBG) = d.θ
-median(d::ArgusBG) = logtwo * d.θ
-mode(::ArgusBG{T}) where {T<:Real} = zero(T)
-
-var(d::ArgusBG) = d.θ^2
-skewness(::ArgusBG{T}) where {T} = T(2)
-kurtosis(::ArgusBG{T}) where {T} = T(6)
-
-entropy(d::ArgusBG{T}) where {T} = one(T) + log(d.θ)
-
-
-
-
-function kldivergence(p::Exponential, q::Exponential)
-    λq_over_λp = scale(q) / scale(p)
-    return -logmxp1(λq_over_λp)
-end
+Distributions.params(d::ArgusBG) = (d.m₀, d.c, d.p)
+Distributions.partype(::ArgusBG{T}) where {T<:Real} = T
 
 #### Evaluation
 function Distributions.pdf(d::ArgusBG, m::Real)
     (; m₀, c, p) = d
     f_argus(m, m₀, c, p) / d.integral
 end
-
-
 function Distributions.cdf(d::ArgusBG, m::Real)
     (; m₀, c, p) = d
     (F_argus(m, m₀, c, p) - F_argus(d.a, m₀, c, p)) / d.integral
 end
 
+#### Random sampling
+
+"""
+    Base.rand(rng::AbstractRNG, d::ArgusBG, n = 1)
+Generate random samples from the ArgusBG distribution.
+- `rng`: Random number generator
+- `d`: ArgusBG distribution
+- `n`: Number of samples to generate (default is 1)
+"""
 function Base.rand(rng::AbstractRNG, d::ArgusBG, n::Int64 = 1)
     (; m₀, c, p, a, b) = d
-    max = maximum(_argus.(range(a, b, 100), m₀, c, p)) # estimate the maximum
+    max = maximum(f_argus.(range(a, b, 100), m₀, c, p)) # estimate the maximum
     r = Float64[]
     for i = 1:n
         m = rand(rng, Uniform(a, b))
-        while rand(rng) > _argus(m, m₀, c, p) / max
+        while rand(rng) > f_argus(m, m₀, c, p) / max
             m = rand(rng, Uniform(a, b))
         end
         push!(r, m)

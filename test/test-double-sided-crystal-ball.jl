@@ -19,7 +19,8 @@ end
 # Test distribution with σ = 1 (standard case)
 d = DoubleCrystalBall(0.0, 1.0, 1.5, 2.0, 2.0, 3.0)
 
-@testset "DoubleCrystalBall parameter validation" begin
+@testset "DoubleCrystalBall Distribution" verbose=true begin
+@testset "Parameter validation" begin
     @test_throws ErrorException DoubleCrystalBall(0.0, -1.0, 1.0, 2.0, 1.0, 2.0)  # negative σ
     @test_throws ErrorException DoubleCrystalBall(0.0, 1.0, -1.0, 2.0, 1.0, 2.0)  # negative αL
     @test_throws ErrorException DoubleCrystalBall(0.0, 1.0, 1.0, 0.5, 1.0, 2.0)  # nL ≤ 1
@@ -27,7 +28,7 @@ d = DoubleCrystalBall(0.0, 1.0, 1.5, 2.0, 2.0, 3.0)
     @test_throws ErrorException DoubleCrystalBall(0.0, 1.0, 1.0, 2.0, 1.0, 0.5)  # nR ≤ 1
 end
 
-@testset "DoubleCrystalBall PDF properties" begin
+@testset "PDF properties" begin
     # PDF should be positive and finite everywhere
     x_test_points = [-5.0, -2.0, -1.0, 0.0, 1.0, 2.0, 5.0]
     for x in x_test_points
@@ -51,7 +52,7 @@ end
     @test isapprox(numerical_integral, 1.0; atol = 1e-6)
 end
 
-@testset "DoubleCrystalBall CDF properties" begin
+@testset "CDF properties" begin
     # CDF should be between 0 and 1
     x_values = [-3.0, -2.0, -1.0, 0.0, 1.0, 2.0, 3.0]
     for x in x_values
@@ -76,7 +77,7 @@ end
     @test isapprox(cdf_value_left, cdf_value_right; atol = 1e-5)
 end
 
-@testset "DoubleCrystalBall quantile properties" begin
+@testset "Quantile properties" begin
     # Quantile should be inverse of CDF in different regions
     x_left = -2.0
     p_left = cdf(d, x_left)
@@ -97,7 +98,7 @@ end
     @test_throws DomainError quantile(d, 1.1)
 end
 
-@testset "DoubleCrystalBall sigma scaling" begin
+@testset "Sigma scaling" begin
     # Test quantile accuracy for different σ values
     test_cases = [
         (0.0, 0.5, 0.5, 1.5, 3.0, 5.0),  # σ < 1
@@ -125,7 +126,7 @@ end
     end
 end
 
-@testset "DoubleCrystalBall symmetry" begin
+@testset "Symmetry" begin
     # Test with symmetric parameters
     d_sym = DoubleCrystalBall(0.0, 1.0, 1.5, 2.0, 1.5, 2.0)
 
@@ -137,7 +138,7 @@ end
     @test isapprox(cdf(d_sym, x_test) + cdf(d_sym, -x_test), 1.0; atol = 1e-8)
 end
 
-@testset "DoubleCrystalBall type stability" begin
+@testset "Type stability" begin
     d_float64 = DoubleCrystalBall(0.0, 1.0, 1.5, 2.0, 2.0, 3.0)
     d_float32 = DoubleCrystalBall(0.0f0, 1.0f0, 1.5f0, 2.0f0, 2.0f0, 3.0f0)
 
@@ -149,7 +150,7 @@ end
     @test quantile(d_float32, 0.5f0) isa Float32
 end
 
-@testset "DoubleCrystalBall support interface" begin
+@testset "Support interface" begin
     d_float64 = DoubleCrystalBall(0.0, 1.0, 1.5, 2.0, 2.0, 3.0)
     d_float32 = DoubleCrystalBall(0.0f0, 1.0f0, 1.5f0, 2.0f0, 2.0f0, 3.0f0)
 
@@ -159,4 +160,5 @@ end
     @test minimum(d_float32) == -Inf32
     @test minimum(d_float64) == support(d_float64).lb
     @test maximum(d_float64) == support(d_float64).ub
+end
 end
