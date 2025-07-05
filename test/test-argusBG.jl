@@ -1,7 +1,6 @@
 using SpecialFunctions
 using DistributionsHEP
 using Distributions
-using Polynomials
 using QuadGK
 using Test
 
