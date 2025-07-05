@@ -93,7 +93,7 @@ Generate random samples from the ArgusBG distribution.
 - `d`: ArgusBG distribution
 - `n`: Number of samples to generate (default is 1)
 """
-function Base.rand(rng::AbstractRNG, d::ArgusBG, n::Int64 = 1)
+function Base.rand(rng::AbstractRNG, d::ArgusBG, n::Integer = 1)
     (; m₀, c, p, a, b) = d
     max = maximum(f_argus.(range(a, b, 100), m₀, c, p)) # estimate the maximum
     r = Float64[]
