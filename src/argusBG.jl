@@ -1,15 +1,23 @@
 """
     ArgusBG(m₀, c, p = 0.5, a = 0., b = m₀)
 
-    Distribution describing the ARGUS background shape
+Distribution describing the ARGUS shape ([wikipedia](https://en.wikipedia.org/wiki/ARGUS_distribution)).
 
 ```math
   \\mathrm{Argus}(m; m_0, c, p) = \\mathcal{N} \\cdot m \\cdot \\left[ 1 - \\left( \\frac{m}{m_0} \\right)^2 \\right]^p
   \\cdot \\exp\\left[ c \\cdot \\left(1 - \\left(\\frac{m}{m_0}\\right)^2 \\right) \\right]
 ```
-where `m` is the mass, `m₀` is the maximum mass, `c` is a shape parameter, and `p` is a power parameter. The distribution is normalized to 1 over the range `[a, b]`.
 
+# Arguments
+- `m₀`: The maximum mass
+- `c`: A shape parameter
+- `p`: A power parameter
+- `a`: The lower limit of the distribution
+- `b`: The upper limit of the distribution
 
+The distribution is normalized to 1 over the range `[a, b]`.
+
+# Example
 ```julia
 ArgusBG(m₀, c)           # ARGUS background distribution with p = 0.5 and in the range [0, m₀]
 ArgusBG(m₀, c, p)        # ARGUS background distribution with p and in the range [0, m₀]
@@ -19,10 +27,6 @@ params(d)                # Get the parameters, i.e. (m₀, c, p)
 shape(d)                 # Get the shape parameter, i.e. c
 scale(d)                 # Get the scale parameter, i.e. m₀
 ```
-
-External links
-
-* [ARGUS distribution on Wikipedia](https://en.wikipedia.org/wiki/ARGUS_distribution)
 """
 struct ArgusBG{T <: Real} <: ContinuousUnivariateDistribution
     m₀::T
