@@ -4,6 +4,8 @@ using Distributions
 using QuadGK
 using Test
 
+@testset "CrystalBall Distribution" verbose=true begin
+
 # Helper to check quantile accuracy for different σ values
 function check_quantile_accuracy(d, ps; atol = 1e-8)
     for p in ps
@@ -16,13 +18,13 @@ end
 # Test distribution with σ = 1 (standard case)
 d = CrystalBall(0.0, 1.0, 1.0, 1.6)
 
-@testset "CrystalBall parameter validation" begin
+@testset "Parameter validation" begin
     @test_throws ErrorException CrystalBall(0.0, -1.0, 1.0, 1.6)  # negative σ
     @test_throws ErrorException CrystalBall(0.0, 1.0, -1.0, 1.6)  # negative α
     @test_throws ErrorException CrystalBall(0.0, 1.0, 1.0, 0.5)   # n ≤ 1
 end
 
-@testset "CrystalBall PDF properties" begin
+@testset "PDF properties" begin
     # PDF should be positive and finite everywhere
     x_test_points = [-5.0, -2.0, -1.0, 0.0, 1.0, 2.0, 5.0]
     for x in x_test_points
@@ -41,7 +43,7 @@ end
     @test isapprox(numerical_integral, 1.0; atol = 1e-7)
 end
 
-@testset "CrystalBall CDF properties" begin
+@testset "CDF properties" begin
     # CDF should be between 0 and 1
     x_values = [-3.0, -2.0, -1.0, 0.0, 1.0, 2.0, 3.0]
     for x in x_values
@@ -61,7 +63,7 @@ end
     @test isapprox(cdf_value_left, cdf_value_right; atol = 1e-5)
 end
 
-@testset "CrystalBall quantile properties" begin
+@testset "Quantile properties" begin
     # Quantile should be inverse of CDF
     x_test = 0.9
     p_test = cdf(d, x_test)
@@ -74,7 +76,7 @@ end
     @test_throws DomainError quantile(d, 1.1)
 end
 
-@testset "CrystalBall sigma scaling" begin
+@testset "Sigma scaling" begin
     # Test quantile accuracy for different σ values
     test_cases = [
         (0.0, 0.5, 2.0, 3.2),  # σ < 1
@@ -102,7 +104,7 @@ end
     end
 end
 
-@testset "CrystalBall type stability" begin
+@testset "Type stability" begin
     d_float64 = CrystalBall(0.0, 1.0, 2.0, 3.0)
     d_float32 = CrystalBall(0.0f0, 1.0f0, 2.0f0, 3.0f0)
 
@@ -114,7 +116,7 @@ end
     @test quantile(d_float32, 0.5f0) isa Float32
 end
 
-@testset "CrystalBall support interface" begin
+@testset "Support interface" begin
     d_float64 = CrystalBall(0.0, 1.0, 2.0, 3.0)
     d_float32 = CrystalBall(0.0f0, 1.0f0, 2.0f0, 3.0f0)
 
@@ -124,4 +126,5 @@ end
     @test minimum(d_float32) == -Inf32
     @test minimum(d_float64) == support(d_float64).lb
     @test maximum(d_float64) == support(d_float64).ub
+end
 end
