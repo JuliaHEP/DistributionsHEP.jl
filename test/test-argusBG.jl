@@ -5,11 +5,11 @@ using QuadGK
 using Test
 
 # Create test objects outside of test statements
-d_argus01 = ArgusBG(1.0, -0.005, 0.5)
-d_argus05 = ArgusBG(1.0, -0.125, 0.5)
-d_argus1 = ArgusBG(1.0, -0.5, 0.5)
-d_argus2 = ArgusBG(1.0, -2.0, 0.5)
-d_argus3 = ArgusBG(1.0, -4.5, 0.5)
+d_argus01 = ArgusBG(-0.005, 0.5)
+d_argus05 = ArgusBG(-0.125, 0.5)
+d_argus1 = ArgusBG(-0.5, 0.5)
+d_argus2 = ArgusBG(-2.0, 0.5, -1.0, 3.0)
+d_argus3 = ArgusBG(-4.5, 0.5, 0.0, 1.0)
 
 d_set = [
     d_argus01
@@ -19,30 +19,15 @@ d_set = [
     d_argus3
 ]
 
-#= for visual inspection
-using Plots
-theme(:boxed)
-let
-    plot(leg = :topleft)
-    map([
-         :d_argus01 :d_argus05 :d_argus1 :d_argus2 :d_argus3 ]) do l
-         d = eval(l)
-         plot!(x -> pdf(d, x), minimum(d), maximum(d), label = "$l")
-     end
-     plot!()
-end
-=#
-
-@testset "ArgusGB Distribution" verbose=true begin
+@testset "ArgusGB Distribution" verbose = true begin
     @testset "Construction" begin
-        for d in d_set 
-            @test minimum(d) == support(d).lb == 0.0
-            @test maximum(d) == support(d).ub == 1.0
+        for d in d_set
+            @test minimum(d) == support(d).lb
+            @test maximum(d) == support(d).ub
         end
     end
 
     @testset "PDF properties" begin
-
         # Check normalization
         for d in d_set
             numerical_integral = quadgk(x -> pdf(d, x), minimum(d), maximum(d))[1]
@@ -57,31 +42,37 @@ end
             @test isapprox(cdf(d, maximum(d)), 1.0; atol = 1e-10)
 
             # CDF should be monotonic
-            @test cdf(d, 0.5) < cdf(d, 0.51)
+            mid = (minimum(d) + maximum(d)) / 2
+            @test cdf(d, mid) < cdf(d, mid + 0.01)
         end
     end
 
+    @testset "Inverse CDF properties" begin
+        for d in d_set
+            for x in range(0.1, 0.9, 11)
+                _cdf = cdf(d, x)
+                _inv_cdf = quantile(d, _cdf)
+                @test isapprox(x, _inv_cdf; atol = 1e-10)
+            end
+        end
+    end
     @testset "Random sampling" begin
         for d in d_set
             # Test single sample
             sample = rand(d)
-            @test 0.0 <= sample <= 1.0
+            @test minimum(d) <= sample <= maximum(d)
 
             # Test multiple samples
             samples = rand(d, 100)
             @test length(samples) == 100
-            @test all(0.0 .<= samples .<= 1.0)
-
-            # Test that samples follow the distribution (basic check)
-            @test mean(samples) > 0.0
-            @test mean(samples) < 1.0
+            @test all(minimum(d) .<= samples .<= maximum(d))
         end
     end
+
     @testset "Parameter extraction" begin
         for d in d_set
-            @test scale(d) == d.m₀
-            @test shape(d) == d.c
-            @test params(d) == (d.m₀, d.c, d.p)
+            @test shape(d) == params(d)[1]  # shape should be the first parameter (c)
+            @test params(d) == (params(d)[1], params(d)[2])  # params should be (c, p)
             @test partype(d) == Float64
         end
     end

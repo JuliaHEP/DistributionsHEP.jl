@@ -1,17 +1,43 @@
 """
-    ArgusBG(m₀, c, p = 0.5, a = 0., b = m₀)
+    StandardArgusBG <: ContinuousUnivariateDistribution
 
-Distribution describing the ARGUS shape ([wikipedia](https://en.wikipedia.org/wiki/ARGUS_distribution)).
+A continuous univariate distribution based on the ARGUS shape defined on the standard interval `[0, 1]`.
 
-```math
-  \\mathrm{Argus}(m; m_0, c, p) = \\mathcal{N} \\cdot m \\cdot \\left[ 1 - \\left( \\frac{m}{m_0} \\right)^2 \\right]^p
-  \\cdot \\exp\\left[ c \\cdot \\left(1 - \\left(\\frac{m}{m_0}\\right)^2 \\right) \\right]
+# Constructor
+```julia
+StandardArgusBG(c, p)
 ```
+where:
+- `c`: Shape parameter (must be negative)
+- `p`: Power parameter (must be ≥ -1)
+
+# Examples
+```julia
+# Standard ARGUS distribution
+d = StandardArgusBG(-2.0, 0.5)
+
+# Different power parameter
+d = StandardArgusBG(-1.5, 1.0)
+```
+"""
+struct StandardArgusBG{T <: Real} <: ContinuousUnivariateDistribution
+    c::T
+    p::T
+    integral::T
+    function StandardArgusBG(c::T, p::T = T(0.5)) where {T <: Real}
+        integral = F_argus_std(T(1), c, p) - F_argus_std(T(0), c, p)
+        new{T}(c, p, integral)
+    end
+end
+
+"""
+    ArgusBG(c, p = 0.5, a = 0.0, b = 1.0)
+
+Distribution describing the ARGUS shape ([wikipedia](https://en.wikipedia.org/wiki/ARGUS_distribution)) on the interval `[a, b]`.
 
 # Arguments
-- `m₀`: The maximum mass
-- `c`: A shape parameter
-- `p`: A power parameter
+- `c`: A shape parameter (must be negative)
+- `p`: A power parameter (must be ≥ -1)
 - `a`: The lower limit of the distribution
 - `b`: The upper limit of the distribution
 
@@ -19,94 +45,71 @@ The distribution is normalized to 1 over the range `[a, b]`.
 
 # Example
 ```julia
-ArgusBG(m₀, c)           # ARGUS background distribution with p = 0.5 and in the range [0, m₀]
-ArgusBG(m₀, c, p)        # ARGUS background distribution with p and in the range [0, m₀]
-ArgusBG(m₀, c, p, a, b)  # ARGUS background distribution with p and in the range [a, b]
+ArgusBG(c)           # ARGUS distribution with p = 0.5 and in the range [0, 1]
+ArgusBG(c, p)        # ARGUS distribution with p and in the range [0, 1]
+ArgusBG(c, p, a, b)  # ARGUS distribution with p and in the range [a, b]
 
-params(d)                # Get the parameters, i.e. (m₀, c, p)
-shape(d)                 # Get the shape parameter, i.e. c
-scale(d)                 # Get the scale parameter, i.e. m₀
+params(d)            # Get the parameters, i.e. (c, p)
+shape(d)             # Get the shape parameter, i.e. c
 ```
 """
-struct ArgusBG{T <: Real} <: ContinuousUnivariateDistribution
-    m₀::T
-    c::T
-    p::T
-    a::T
-    b::T
-    integral::T
-    ArgusBG{T}(m₀::T, c::T, p::T, a::T, b::T, integral::T) where {T} =
-        new{T}(m₀, c, p, a, b, integral)
+function ArgusBG(c::T, p = T(0.5), a = 0, b = 1) where {T <: Real}
+    return StandardArgusBG(c, p) * (b - a) + a
 end
 
-function ArgusBG(
-    m₀::T,
-    c::T,
-    p::T = T(0.5),
-    a::T = T(0),
-    b::T = m₀;
-    check_args::Bool = true,
-) where {T <: Real}
-    @check_args ArgusBG (m₀, m₀ > zero(m₀)) (c, c < zero(c)) (p, p >= -1) (a, a < m₀) (
-        b,
-        b > a,
-    )
-    integral = F_argus(b, m₀, c, p) - F_argus(a, m₀, c, p)
-    return ArgusBG{T}(m₀, c, p, a, b, integral)
+# Standardized ARGUS PDF on [0,1]
+function f_argus_std(x, c, p)
+    x * (1 - x^2)^p * exp(c * (1 - x^2))
 end
 
-function f_argus(m, m₀, c, p)
-    m >= m₀ && return 0.0
-    m * (1 - (m / m₀)^2)^p * exp(c * (1 - (m / m₀)^2))
+function F_argus_std(x, c, p)
+    w = gamma(p + 1, -c * (1 - x^2)) / (2 * (-c)^(p + 1))
+    return w
 end
 
-function F_argus(m, m₀, c, p)
-    m >= m₀ && (m = m₀ - 1e-10)
-    f = (m / m₀)^2 - 1
-    w = -(c * f + 0im)^(-p) * m₀^2 * (-f + 0im)^p * gamma(1 + p, c * f + 0im) / 2c
-    return isreal(w) ? real(w) : zero(m)
+function Distributions.quantile(d::StandardArgusBG{T}, q::Real) where {T <: Real}
+    # Special cases for boundaries
+    q <= 0 && return 0.0
+    q >= 1 && return 1.0
+    s = d.p + 1
+    χ = -d.c  # Convert to positive scale
+    # Compute regularized incomplete gamma P(s, χ)
+    P_chi = gamma_inc(d.p + 1, χ)[1]  # [1] = regularized lower gamma P(a,x)
+    # Calculate target value for inverse gamma
+    P_target = (1 - q) * P_chi
+    # Compute inverse incomplete gamma
+    z = gamma_inc_inv(d.p + 1, P_target, 1 - P_target)
+    # Solve for x and ensure numerical stability
+    x_sq = max(1 - z / χ, T(0))  # Prevent negative values from floating-point errors
+    return sqrt(x_sq)
 end
 
-Distributions.maximum(d::ArgusBG{T}) where {T <: Real} = d.b
-Distributions.minimum(d::ArgusBG{T}) where {T <: Real} = d.a
+Distributions.maximum(d::StandardArgusBG{T}) where {T <: Real} = T(1)
+Distributions.minimum(d::StandardArgusBG{T}) where {T <: Real} = T(0)
 
 #### Parameters
+Distributions.shape(d::StandardArgusBG) = d.c
+Distributions.params(d::StandardArgusBG) = (d.c, d.p)
+Distributions.partype(::StandardArgusBG{T}) where {T <: Real} = T
 
-Distributions.scale(d::ArgusBG) = d.m₀
-Distributions.shape(d::ArgusBG) = d.c
-
-Distributions.params(d::ArgusBG) = (d.m₀, d.c, d.p)
-Distributions.partype(::ArgusBG{T}) where {T <: Real} = T
-
-#### Evaluation
-function Distributions.pdf(d::ArgusBG, m::Real)
-    (; m₀, c, p) = d
-    f_argus(m, m₀, c, p) / d.integral
-end
-function Distributions.cdf(d::ArgusBG, m::Real)
-    (; m₀, c, p) = d
-    (F_argus(m, m₀, c, p) - F_argus(d.a, m₀, c, p)) / d.integral
+# Forwarding methods for LocationScale wrapped StandardArgusBG
+Distributions.shape(d::LocationScale{<:Any, <:Any, <:StandardArgusBG}) = shape(d.ρ)
+# Override params for ArgusBG distributions to return shape parameters
+function Distributions.params(d::LocationScale{T1, Continuous, StandardArgusBG{T2}}) where {T1 <: Real, T2 <: Real}
+    return params(d.ρ)
 end
 
-#### Random sampling
-
-"""
-    Base.rand(rng::AbstractRNG, d::ArgusBG, n = 1)
-Generate random samples from the ArgusBG distribution.
-- `rng`: Random number generator
-- `d`: ArgusBG distribution
-- `n`: Number of samples to generate (default is 1)
-"""
-function Base.rand(rng::AbstractRNG, d::ArgusBG, n::Int = 1)
-    (; m₀, c, p, a, b) = d
-    max = maximum(f_argus.(range(a, b, 100), m₀, c, p)) # estimate the maximum
-    r = Float64[]
-    for i ∈ 1:n
-        m = rand(rng, Uniform(a, b))
-        while rand(rng) > f_argus(m, m₀, c, p) / max
-            m = rand(rng, Uniform(a, b))
-        end
-        push!(r, m)
-    end
-    return n == 1 ? r[1] : r
+function Distributions.pdf(d::StandardArgusBG, x::Real)
+    (x <= 0 || x >= 1) && return 0.0
+    f_argus_std(x, d.c, d.p) / d.integral
 end
+
+function Distributions.cdf(d::StandardArgusBG, x::Real)
+    (x <= 0) && return 0.0
+    (x >= 1) && return 1.0
+    (F_argus_std(x, d.c, d.p) - F_argus_std(0, d.c, d.p)) / d.integral
+end
+
+Base.rand(rng::AbstractRNG, d::StandardArgusBG) = quantile(d, rand(rng))
+Base.rand(rng::AbstractRNG, d::StandardArgusBG, n::Int) =
+    quantile.(Ref(d), rand(rng, n))
