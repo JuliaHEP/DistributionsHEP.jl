@@ -54,7 +54,7 @@ d = ArgusBG(-2.0, 0.5, 0, 1)
 d = ArgusBG(-1.5, 1.0, 0, 10)
 ```
 """
-function ArgusBG(c::T, p = T(0.5), a = zero(T), b = one(T)) where {T <: Real}
+function ArgusBG(c::T, p = T(0.5), a = 0.0, b = 1.0) where {T <: Real}
     return StandardArgusBG(c, p) * (b - a) + a
 end
 
@@ -72,17 +72,16 @@ Distributions.minimum(d::StandardArgusBG{T}) where {T <: Real} = T(0)
 Distributions.maximum(d::StandardArgusBG{T}) where {T <: Real} = T(1)
 
 Distributions.pdf(d::StandardArgusBG, x::Real) =
-    (x <= 0 || x >= 1) ? 0.0 : f_argus_std(x, d.c, d.p) / d.integral
+    (x <= 0 || x >= 1) ? zero(x) : f_argus_std(x, d.c, d.p) / d.integral
 
 Distributions.cdf(d::StandardArgusBG, x::Real) =
-    x <= 0 ? 0.0 : x >= 1 ? 1.0 : (F_argus_std(x, d.c, d.p) - F_argus_std(0, d.c, d.p)) / d.integral
+    x <= 0 ? zero(x) : x >= 1 ? one(x) : (F_argus_std(x, d.c, d.p) - F_argus_std(0, d.c, d.p)) / d.integral
 
 function Distributions.quantile(d::StandardArgusBG{T}, q::Real) where {T <: Real}
     # Special cases for boundaries
-    q <= 0 && return 0.0
-    q >= 1 && return 1.0
+    q <= zero(T) && return zero(T)
+    q >= one(T) && return one(T)
 
-    s = d.p + 1
     χ = -d.c  # Convert to positive scale
 
     # Compute regularized incomplete gamma P(s, χ)
@@ -95,7 +94,7 @@ function Distributions.quantile(d::StandardArgusBG{T}, q::Real) where {T <: Real
     z = gamma_inc_inv(d.p + 1, P_target, 1 - P_target)
 
     # Solve for x and ensure numerical stability
-    x_sq = max(1 - z / χ, T(0))  # Prevent negative values from floating-point errors
+    x_sq = max(1 - z / χ, zero(T))  # Prevent negative values from floating-point errors
     return sqrt(x_sq)
 end
 
