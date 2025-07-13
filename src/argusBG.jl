@@ -54,7 +54,7 @@ d = ArgusBG(-2.0, 0.5, 0, 1)
 d = ArgusBG(-1.5, 1.0, 0, 10)
 ```
 """
-function ArgusBG(c::T, p = T(0.5), a = 0, b = 1) where {T <: Real}
+function ArgusBG(c::T, p = T(0.5), a = zero(T), b = one(T)) where {T <: Real}
     return StandardArgusBG(c, p) * (b - a) + a
 end
 
