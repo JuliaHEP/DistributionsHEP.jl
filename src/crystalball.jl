@@ -1,5 +1,5 @@
 # Common parameter validation
-function _check_crystalball_params(σ::T, α::T, n::T) where {T<:Real}
+function _check_crystalball_params(σ::T, α::T, n::T) where {T <: Real}
     σ > zero(T) || error("σ (scale) must be positive.")
     α > zero(T) || error("α (transition point) must be positive.")
     n > one(T) || error("n (power-law exponent) must be greater than 1.")
@@ -13,8 +13,8 @@ It consists of a Gaussian core and a power-law tail on one side (typically the l
 
 The probability density function is defined as:
 ````math
-    f(x; μ, σ, α, n) = N * exp(-(x̂^2)/2)           for x̂ > -α
-                    = N * A * (B - x̂)^(-n)         for x̂ ≤ -α
+    f(x; μ, σ, α, n) = N exp(-(x̂^2)/2)      for x̂ > -α
+                    = N  A (B - x̂)^{-n}     for x̂ ≤ -α
 ````
 where x̂ = (x - μ) / σ.
 The parameters A and B are derived from α and n to ensure continuity of the function and its first derivative.
@@ -35,10 +35,10 @@ The struct also stores precomputed constants `norm_const` (N), `A_const` (A), an
 using DistributionsHEP
 using Plots
 
-d = CrystalBall(μ=0.0, σ=1.0, α=2.0, n=3.2)
+d = CrystalBall(0.0, 1.0, 2.0, 3.2)  # μ, σ, α, n
 plot(-2, 4, x->pdf(d, x))
 """
-struct CrystalBall{T<:Real} <: ContinuousUnivariateDistribution
+struct CrystalBall{T <: Real} <: ContinuousUnivariateDistribution
     μ::T
     σ::T
     α::T
@@ -48,12 +48,14 @@ struct CrystalBall{T<:Real} <: ContinuousUnivariateDistribution
     A_const::T    # Tail parameter A
     B_const::T    # Tail parameter B
 
-    function CrystalBall(μ::T, σ::T, α::T, n::T) where {T<:Real}
+    function CrystalBall(μ::T, σ::T, α::T, n::T) where {T <: Real}
         _check_crystalball_params(σ, α, n)
-        # absα is effectively α due to the check α > 0
+        # Calculate normalization constant
+        # The normalization should be: N = 1 / (C + D_val)
+        # where C is the tail contribution and D_val is the Gaussian core contribution
         C = n / α / (n - 1) * exp(-α^2 / 2)
         D_val = sqrt(T(π) / 2) * (one(T) + erf(α / sqrt(T(2))))
-        N = one(T) / (σ * (C + D_val))
+        N = one(T) / (C + D_val)
 
         A = (n / α)^n * exp(-α^2 / 2)
         B = n / α - α
@@ -69,12 +71,12 @@ Compute the probability density function (PDF) of the Crystal Ball distribution 
 The function uses precomputed normalization and tail parameters stored within the `CrystalBall` struct for efficiency.
 It switches between the Gaussian core and the power-law tail based on the value of `x` relative to the transition point defined by `α`.
 """
-function Distributions.pdf(d::CrystalBall{T}, x::Real) where {T<:Real}
+function Distributions.pdf(d::CrystalBall{T}, x::Real) where {T <: Real}
     x̂ = (x - d.μ) / d.σ
     # Gaussian part
-    x̂ > -d.α && return d.norm_const * exp(-x̂^2 / 2)
+    x̂ > -d.α && return d.norm_const * exp(-x̂^2 / 2) / d.σ
     # Power-law tail part
-    return d.norm_const * d.A_const * (d.B_const - x̂)^(-d.n)
+    return d.norm_const * d.A_const * (d.B_const - x̂)^(-d.n) / d.σ
 end
 
 """
@@ -84,7 +86,7 @@ Compute the cumulative distribution function (CDF) of the Crystal Ball distribut
 
 The CDF is calculated by integrating the PDF. This implementation handles the integral of the power-law tail and the Gaussian core separately, ensuring continuity at the transition point.
 """
-function Distributions.cdf(d::CrystalBall{T}, x::Real) where {T<:Real}
+function Distributions.cdf(d::CrystalBall{T}, x::Real) where {T <: Real}
     x̂ = (x - d.μ) / d.σ
 
     # Value of the CDF at the transition point x̂ = -α
@@ -98,9 +100,10 @@ function Distributions.cdf(d::CrystalBall{T}, x::Real) where {T<:Real}
     else
         # CDF for the Gaussian part (x̂ > -α)
         # CDF at -α + integral of Gaussian PDF from -α to x̂
+        # The integral is: ∫_{-α}^{x̂} N * exp(-t^2/2) / σ dt = N * sqrt(π/2) * (erf(x̂/sqrt(2)) + erf(α/sqrt(2)))
         integral_gaussian_part =
             sqrt(T(π) / 2) * (erf(x̂ / sqrt(T(2))) + erf(d.α / sqrt(T(2))))
-        return cdf_at_minus_alpha + d.norm_const * d.σ * integral_gaussian_part
+        return cdf_at_minus_alpha + d.norm_const * integral_gaussian_part
     end
 end
 
@@ -113,7 +116,7 @@ The function determines if the probability `p` falls into the power-law tail or 
 and then inverts the corresponding CDF segment.
 Requires `SpecialFunctions.erf` and `SpecialFunctions.erfinv` to be available.
 """
-function Distributions.quantile(d::CrystalBall{T}, p::Real) where {T<:Real}
+function Distributions.quantile(d::CrystalBall{T}, p::Real) where {T <: Real}
     if p < zero(T) || p > one(T)
         throw(DomainError(p, "Probability p must be in [0,1]."))
     end
@@ -130,8 +133,10 @@ function Distributions.quantile(d::CrystalBall{T}, p::Real) where {T<:Real}
         x̂ = d.B_const - base^(one(T) / (one(T) - d.n))
     else
         # Quantile is in the Gaussian core. Invert the Gaussian core CDF formula.
+        # Solve: p = cdf_at_minus_alpha + N * sqrt(π/2) * (erf(x̂/sqrt(2)) + erf(α/sqrt(2)))
+        # Rearranging: erf(x̂/sqrt(2)) = (p - cdf_at_minus_alpha) / (N * sqrt(π/2)) - erf(α/sqrt(2))
         term_for_erfinv_num = (p - cdf_at_minus_alpha)
-        term_for_erfinv_den = d.norm_const * d.σ * sqrt(T(π) / T(2))
+        term_for_erfinv_den = d.norm_const * sqrt(T(π) / T(2))
 
         erf_alpha_sqrt2 = erf(d.α / sqrt(T(2)))
         arg_erfinv = (term_for_erfinv_num / term_for_erfinv_den) - erf_alpha_sqrt2
@@ -144,5 +149,5 @@ function Distributions.quantile(d::CrystalBall{T}, p::Real) where {T<:Real}
     return d.μ + d.σ * x̂
 end
 
-Distributions.maximum(d::CrystalBall{T}) where {T<:Real} = T(Inf)
-Distributions.minimum(d::CrystalBall{T}) where {T<:Real} = T(-Inf)
+Distributions.maximum(d::CrystalBall{T}) where {T <: Real} = T(Inf)
+Distributions.minimum(d::CrystalBall{T}) where {T <: Real} = T(-Inf)
