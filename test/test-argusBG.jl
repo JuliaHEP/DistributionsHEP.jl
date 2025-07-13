@@ -19,7 +19,7 @@ d_set = [
     d_argus3
 ]
 
-@testset "ArgusGB Distribution" verbose = true begin
+@testset "ArgusBG Distribution" verbose = true begin
     @testset "Construction" begin
         for d in d_set
             @test minimum(d) == support(d).lb
