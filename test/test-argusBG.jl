@@ -6,9 +6,9 @@ using Test
 
 # Create test objects outside of test statements
 d_argus01 = ArgusBG(-0.005, 0.5)
-d_argus05 = ArgusBG(-0.125, 0.5)
-d_argus1 = ArgusBG(-0.5, 0.5)
-d_argus2 = ArgusBG(-2.0, 0.5, -1.0, 3.0)
+d_argus05 = ArgusBG(-0.125, 0.6)
+d_argus1 = ArgusBG(-0.5, 0.4)
+d_argus2 = ArgusBG(-2.0, 0.8, -1.0, 3.0)
 d_argus3 = ArgusBG(-4.5, 0.5, 0.0, 1.0)
 
 d_set = [
