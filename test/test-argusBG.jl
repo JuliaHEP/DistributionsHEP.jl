@@ -6,10 +6,10 @@ using Test
 
 # Create test objects outside of test statements
 d_argus01 = ArgusBG(-0.005, 0.5)
-d_argus05 = ArgusBG(-0.125, 0.6)
+d_argus05 = ArgusBG(-0.125, 0.6, -2, 0)
 d_argus1 = ArgusBG(-0.5, 0.4)
 d_argus2 = ArgusBG(-2.0, 0.8, -1.0, 3.0)
-d_argus3 = ArgusBG(-4.5, 0.5, 0.0, 1.0)
+d_argus3 = ArgusBG(-4.5, 0.5, 0.5, 1.5)
 
 d_set = [
     d_argus01
@@ -18,6 +18,24 @@ d_set = [
     d_argus2
     d_argus3
 ]
+
+# for visual inspection
+# using Plots
+# theme(:boxed)
+# let
+#     plot(leg = :topleft)
+#     map([
+#         :d_argus01
+#         :d_argus05
+#         :d_argus1
+#         :d_argus2
+#         :d_argus3
+#     ]) do l
+#         d = eval(l)
+#         plot!(x -> pdf(d, x), minimum(d), maximum(d), label = "$l")
+#     end
+#     plot!()
+# end
 
 @testset "ArgusBG Distribution" verbose = true begin
     @testset "Construction" begin
@@ -49,7 +67,7 @@ d_set = [
 
     @testset "Inverse CDF properties" begin
         for d in d_set
-            for x in range(0.1, 0.9, 11)
+            for x in range(0.1, 0.9, 11) .* (maximum(d) - minimum(d)) .+ minimum(d)
                 _cdf = cdf(d, x)
                 _inv_cdf = quantile(d, _cdf)
                 @test isapprox(x, _inv_cdf; atol = 1e-10)
