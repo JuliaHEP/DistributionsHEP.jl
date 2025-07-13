@@ -99,17 +99,8 @@ function Distributions.quantile(d::StandardArgusBG{T}, q::Real) where {T <: Real
 end
 
 #### Parameters
-Distributions.shape(d::StandardArgusBG) = d.c
 Distributions.params(d::StandardArgusBG) = (d.c, d.p)
 Distributions.partype(::StandardArgusBG{T}) where {T <: Real} = T
-
-# Forwarding methods for LocationScale wrapped StandardArgusBG
-Distributions.shape(d::LocationScale{<:Any, <:Any, <:StandardArgusBG}) = shape(d.ρ)
-
-# Override params for ArgusBG distributions to return shape parameters
-function Distributions.params(d::LocationScale{T1, Continuous, StandardArgusBG{T2}}) where {T1 <: Real, T2 <: Real}
-    return params(d.ρ)
-end
 
 Base.rand(rng::AbstractRNG, d::StandardArgusBG) = quantile(d, rand(rng))
 Base.rand(rng::AbstractRNG, d::StandardArgusBG, n::Int) =

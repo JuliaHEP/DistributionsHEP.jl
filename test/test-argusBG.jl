@@ -71,8 +71,7 @@ d_set = [
 
     @testset "Parameter extraction" begin
         for d in d_set
-            @test shape(d) == params(d)[1]  # shape should be the first parameter (c)
-            @test params(d) == (params(d)[1], params(d)[2])  # params should be (c, p)
+            @test params(d.ρ) == (d.ρ.c, d.ρ.p)
             @test partype(d) == Float64
         end
     end
