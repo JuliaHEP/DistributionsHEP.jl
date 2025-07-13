@@ -1,7 +1,7 @@
 name = "DistributionsHEP"
 uuid = "0d0d6f60-fb7b-48ca-90bb-e14e8b1655a7"
 authors = ["Pere Mato <pere.mato@cern.ch>"]
-version = "0.3.0"
+version = "0.4.0"
 
 [deps]
 Distributions = "31c24e10-a181-5473-b8eb-7969acd0382f"
