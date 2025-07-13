@@ -1,45 +1,48 @@
 # DistributionsHEP.jl
 
-`DistributionsHEP.jl` is a package extending the [`Distributions.jl`](https://github.com/JuliaStats/Distributions.jl) package with HEP specific distributions. 
-Whereas the package `Distributions.jl` already provides a large collection of common distributions out of the box, we use in HEP special distributions that make sense to be grouped in tis package. 
+`DistributionsHEP.jl` is a package extending the [`Distributions.jl`](https://github.com/JuliaStats/Distributions.jl) package with High Energy Physics (HEP) specific distributions.
 
-Generally, you don't have to implement every API method listed in the documentation. We just need to implement a small number of internal methods that will be used by `Distributions.jl` to provide all the user-end API methods.
+This package specializes in distributions with a closed-form or special-algorithm CDFs,
+any distributions requiring numerical integration can be wrapped ith [`NumericalDistributions.jl`](https://github.com/mmikhasenko/NumericalDistributions.jl).
+
 
 ## Implemented Distributions
 
-- **ChebyshevDist**: Chebyshev polynomial distribution
-- **ArgusBGDist**: Distribution describing the ARGUS background
-- **CrystalBall**: One-sided Crystal Ball distribution with power-law tail
-- **DoubleCrystalBall**: Two-sided Crystal Ball distribution with power-law tails on both sides of a Gaussian core
+- **Chebyshev**: Chebyshev polynomial distribution
+- **ArgusBG**: ARGUS background distribution
+- **CrystalBall**, **DoubleCrystalBall**: One-sided and two-sided Crystal Ball distribution with Gaussian core and power-law tail
 
-Mathematical derivations for both the one-sided and two-sided Crystal Ball distributions are found in `docs/CrystalBallMath.md`.
+Mathematical derivations for Crystal Ball distributions are in [`docs/CrystalBallMath.md`](docs/CrystalBallMath.md), and formulas for ARGUS background distribution are in [`docs/ArgusBG.md`](docs/ArgusBG.md).
 
 ## Installation
 
-To install `DistributionsHEP.jl`, use Julia's built-in package manager. In the Julia REPL, type:
+To install `DistributionsHEP.jl`, use Julia's built-in package manager.
+In the Julia REPL, type:
 
 ```julia
 julia> using Pkg
 julia> Pkg.add("DistributionsHEP")
 ```
 
-Alternatively, you can enter the Pkg mode by pressing `]` in the REPL, then type:
-
+Or in Pkg mode (`]`):
 ```julia
 pkg> add DistributionsHEP
 ```
 
 ## Usage
 
-Once installed, you can begin using `DistributionsHEP.jl` by importing the package:
-
 ```julia
 using DistributionsHEP
 
+# Chebyshev distribution
 c0, c1, c2 = 1.0, 0.2, 0.3
 a, b = 0.0, 10.0
+cheb = Chebyshev([c0, c1, c2], a, b)
 
-cheb = Chebyshev([c0, c1, c2], a, b) # default values for [a,b] are [-1,1]
+# Use standard Distributions.jl API
+pdf(cheb, 3.3)
+cdf(cheb, 3.3)
+rand(cheb)
 ```
 
 The rest of the interface (`pdf`, `cdf`, `rand`, etc.) follows the standard `Distributions.jl` API.
