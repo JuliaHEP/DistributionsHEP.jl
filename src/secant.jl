@@ -44,7 +44,8 @@ end
 
 # Convenience constructors
 function HyperbolicSecant(μ::T, σ::T; check_args::Bool = true) where {T <: Real}
-    @check_args HyperbolicSecant (σ, σ > zero(σ))
+    # @check_args macro automatically respects the check_args parameter
+    @check_args(HyperbolicSecant, (σ, σ > zero(σ), "σ (scale) must be positive."))
     return HyperbolicSecant{T}(μ, σ)
 end
 # The promotion happens automatically in the inner constructor since both parameters are typed as ::T
