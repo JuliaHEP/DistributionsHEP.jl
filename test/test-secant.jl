@@ -38,6 +38,10 @@ d_general = HyperbolicSecant(1.5, 0.8)  # General case μ=1.5, σ=0.8
         @test HyperbolicSecant() == HyperbolicSecant(0.0, 1.0)
         @test HyperbolicSecant(2.0) == HyperbolicSecant(2.0, 1.0)
         @test HyperbolicSecant(1, 2) == HyperbolicSecant(1.0, 2.0)
+        
+        # Test type stability for convenience constructors
+        @test typeof(HyperbolicSecant(Float32(0.0)).μ) == Float32
+        @test typeof(HyperbolicSecant(Float32(0.0)).σ) == Float32
 
         # Test parameter validation
         @test_throws DomainError HyperbolicSecant(0.0, 0.0)  # σ must be positive

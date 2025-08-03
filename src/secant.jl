@@ -74,7 +74,7 @@ end
 HyperbolicSecant(μ::Real, σ::Real) = HyperbolicSecant(promote(μ, σ)...)
 HyperbolicSecant(μ::Integer, σ::Integer) = HyperbolicSecant(float(μ), float(σ))
 HyperbolicSecant() = HyperbolicSecant(0.0, 1.0)  # Standard hyperbolic secant
-HyperbolicSecant(μ::Real) = HyperbolicSecant(μ, 1.0)  # Unit scale
+HyperbolicSecant(μ::Real) = HyperbolicSecant(μ, one(μ))  # Unit scale
 
 # Support
 Distributions.minimum(::HyperbolicSecant) = -Inf
