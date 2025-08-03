@@ -17,7 +17,7 @@ where sech(u) = 2/(e^u + e^(-u)) = 1/cosh(u).
 
 The cumulative distribution function is:
 ````math
-    F(x; μ, σ) = \\frac{2}{π} \\arctan\\left(\\tanh\\left(\\frac{π(x-μ)}{4σ}\\right)\\right)
+    F(x; μ, σ) = \\frac{2}{π} \\arctan\\left(\\exp\\left(\\frac{π(x-μ)}{2σ}\\right)\\right)
 ````
 
 # Arguments
