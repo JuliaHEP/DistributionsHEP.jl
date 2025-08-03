@@ -34,7 +34,7 @@ d_general = HyperbolicSecant(1.5, 0.8)  # General case μ=1.5, σ=0.8
         @test HyperbolicSecant() == HyperbolicSecant(0.0, 1.0)
         @test HyperbolicSecant(2.0) == HyperbolicSecant(2.0, 1.0)
         @test HyperbolicSecant(1, 2) == HyperbolicSecant(1.0, 2.0)
-        
+
         # Test type stability for convenience constructors
         @test typeof(HyperbolicSecant(Float32(0.0)).μ) == Float32
         @test typeof(HyperbolicSecant(Float32(0.0)).σ) == Float32
@@ -200,11 +200,13 @@ d_general = HyperbolicSecant(1.5, 0.8)  # General case μ=1.5, σ=0.8
     end
 
     @testset "Edge Cases" begin
-        # Test behavior near boundaries of quantile function (consistent with Normal distribution)
+        # Test behavior at boundaries of quantile function
         @test quantile(d_standard, 0.0) == -Inf
         @test quantile(d_standard, 1.0) == Inf
-        @test quantile(d_standard, -0.1) == -Inf
-        @test quantile(d_standard, 1.1) == Inf
+
+        # Test that errors are thrown for invalid probabilities
+        @test_throws DomainError quantile(d_standard, -0.1)
+        @test_throws DomainError quantile(d_standard, 1.1)
 
         # Test CDF approaches 0 and 1 at extremes
         @test cdf(d_standard, -10.0) ≈ 0.0 atol = 1e-6

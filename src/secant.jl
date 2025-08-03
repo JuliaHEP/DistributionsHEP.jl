@@ -102,15 +102,19 @@ The quantile function in the closed form is:
 ````math
     F^(-1)(p; μ, σ) = μ + σ * (2/π) * log(tan(π*p/2))
 ````
+
+The formula explicitly handles the boundary cases:
+- For p = 0: tan(0) = 0, so log(0) = -Inf
+- For p = 1: tan(π/2) = ∞, so log(∞) = Inf
 """
 function Distributions.quantile(d::HyperbolicSecant{T}, p::Real) where {T}
-    if p ≤ 0
-        return -Inf
-    elseif p ≥ 1
-        return Inf
-    else
-        return d.μ + d.σ * T(2) / T(π) * log(tan(T(π) * p / T(2)))
+    if p < zero(T) || p > one(T)
+        throw(DomainError(p, "Probability p must be in [0,1]."))
     end
+    # Handle boundary cases explicitly due to floating point precision
+    p == zero(T) && return T(-Inf)
+    p == one(T) && return T(Inf)
+    return d.μ + d.σ * T(2) / T(π) * log(tan(T(π) * p / T(2)))
 end
 
 # Log-probability density function (for numerical stability)
