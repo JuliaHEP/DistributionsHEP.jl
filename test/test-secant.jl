@@ -6,7 +6,7 @@ using Test
 using Random
 
 # Create test objects outside of test statements
-d_standard = HyperbolicSecant(0.0, 1.0)  # Standard distribution μ=0, σ=1
+d_standard = HyperbolicSecant()  # Standard distribution μ=0, σ=1
 d_shifted = HyperbolicSecant(2.0, 1.0)  # Shifted distribution μ=2, σ=1
 d_scaled = HyperbolicSecant(0.0, 2.0)  # Scaled distribution μ=0, σ=2
 d_general = HyperbolicSecant(1.5, 0.8)  # General case μ=1.5, σ=0.8
@@ -35,6 +35,8 @@ d_general = HyperbolicSecant(1.5, 0.8)  # General case μ=1.5, σ=0.8
         @test d_general.σ == 0.8
 
         # Test convenience constructors
+        @test HyperbolicSecant() == HyperbolicSecant(0.0, 1.0)
+        @test HyperbolicSecant(2.0) == HyperbolicSecant(2.0, 1.0)
         @test HyperbolicSecant(1, 2) == HyperbolicSecant(1.0, 2.0)
 
         # Test parameter validation
