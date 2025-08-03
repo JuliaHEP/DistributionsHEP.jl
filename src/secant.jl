@@ -42,7 +42,7 @@ The quantile function (inverse CDF) is:
 using DistributionsHEP
 
 # Standard hyperbolic secant distribution (μ=0, σ=1)
-d1 = HyperbolicSecant()
+d1 = HyperbolicSecant(0.0, 1.0)
 
 # Custom parameters
 d2 = HyperbolicSecant(2.0, 1.5)  # μ=2.0, σ=1.5
@@ -73,8 +73,6 @@ function HyperbolicSecant(μ::T, σ::T; check_args::Bool = true) where {T <: Rea
 end
 HyperbolicSecant(μ::Real, σ::Real) = HyperbolicSecant(promote(μ, σ)...)
 HyperbolicSecant(μ::Integer, σ::Integer) = HyperbolicSecant(float(μ), float(σ))
-HyperbolicSecant() = HyperbolicSecant(0.0, 1.0)  # Standard hyperbolic secant
-HyperbolicSecant(μ::Real) = HyperbolicSecant(μ, 1.0)  # Unit scale
 
 # Support
 Distributions.minimum(::HyperbolicSecant) = -Inf
