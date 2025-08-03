@@ -60,22 +60,25 @@ See also: The standard hyperbolic secant distribution has special mathematical p
 struct HyperbolicSecant{T <: Real} <: ContinuousUnivariateDistribution
     μ::T  # location parameter (mean)
     σ::T  # scale parameter (standard deviation)
-    
+
     function HyperbolicSecant{T}(μ::T, σ::T) where {T <: Real}
-        @check_args(HyperbolicSecant, σ > zero(T))
         new{T}(μ, σ)
     end
 end
 
 # Convenience constructors
-HyperbolicSecant(μ::T, σ::T) where {T <: Real} = HyperbolicSecant{T}(μ, σ)
+function HyperbolicSecant(μ::T, σ::T; check_args::Bool = true) where {T <: Real}
+    @check_args HyperbolicSecant (σ, σ > zero(σ))
+    return HyperbolicSecant{T}(μ, σ)
+end
 HyperbolicSecant(μ::Real, σ::Real) = HyperbolicSecant(promote(μ, σ)...)
 HyperbolicSecant(μ::Integer, σ::Integer) = HyperbolicSecant(float(μ), float(σ))
 HyperbolicSecant() = HyperbolicSecant(0.0, 1.0)  # Standard hyperbolic secant
 HyperbolicSecant(μ::Real) = HyperbolicSecant(μ, 1.0)  # Unit scale
 
 # Support
-Distributions.support(::Type{<:HyperbolicSecant}) = RealInterval(-Inf, Inf)
+Distributions.minimum(::HyperbolicSecant) = -Inf
+Distributions.maximum(::HyperbolicSecant) = Inf
 
 # Parameters
 Distributions.location(d::HyperbolicSecant) = d.μ
@@ -106,7 +109,7 @@ end
 
 # Quantile function (inverse CDF)
 function Distributions.quantile(d::HyperbolicSecant{T}, p::Real) where {T}
-    @check_args(HyperbolicSecant, 0 < p < 1)
+    0 < p < 1 || throw(ArgumentError("p must be in (0,1)"))
     return d.μ + d.σ * T(2) / T(π) * log(tan(T(π) * p / T(2)))
 end
 
@@ -130,8 +133,5 @@ end
 
 # Characteristic function
 function cf(d::HyperbolicSecant{T}, t::Real) where {T}
-    return exp(im * d.μ * t) * sech(d.σ * t)
+    return exp(Complex{T}(0, 1) * d.μ * t) * sech(d.σ * t)
 end
-
-# Helper function for hyperbolic secant
-sech(x) = 2 / (exp(x) + exp(-x))
