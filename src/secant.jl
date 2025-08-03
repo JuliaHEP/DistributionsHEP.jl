@@ -47,6 +47,7 @@ function HyperbolicSecant(μ::T, σ::T; check_args::Bool = true) where {T <: Rea
     @check_args HyperbolicSecant (σ, σ > zero(σ))
     return HyperbolicSecant{T}(μ, σ)
 end
+# The promotion happens automatically in the inner constructor since both parameters are typed as ::T
 HyperbolicSecant(μ::Real, σ::Real) = HyperbolicSecant(promote(μ, σ)...)
 HyperbolicSecant(μ::Integer, σ::Integer) = HyperbolicSecant(float(μ), float(σ))
 HyperbolicSecant() = HyperbolicSecant(0.0, 1.0)  # Standard hyperbolic secant
@@ -67,7 +68,9 @@ Distributions.mean(d::HyperbolicSecant) = d.μ
 Distributions.var(d::HyperbolicSecant) = d.σ^2
 Distributions.std(d::HyperbolicSecant) = d.σ
 Distributions.skewness(::HyperbolicSecant{T}) where {T} = zero(T)
-Distributions.kurtosis(::HyperbolicSecant{T}) where {T} = T(5)
+# Kurtosis in Distributions.jl means excess kurtosis (kurtosis - 3)
+# For HyperbolicSecant, the raw kurtosis is 5, so excess kurtosis is 2
+Distributions.kurtosis(::HyperbolicSecant{T}) where {T} = T(2)
 Distributions.mode(d::HyperbolicSecant) = d.μ
 Distributions.median(d::HyperbolicSecant) = d.μ
 
@@ -101,8 +104,13 @@ The quantile function in the closed form is:
 ````
 """
 function Distributions.quantile(d::HyperbolicSecant{T}, p::Real) where {T}
-    0 < p < 1 || throw(ArgumentError("p must be in (0,1)"))
-    return d.μ + d.σ * T(2) / T(π) * log(tan(T(π) * p / T(2)))
+    if p ≤ 0
+        return -Inf
+    elseif p ≥ 1
+        return Inf
+    else
+        return d.μ + d.σ * T(2) / T(π) * log(tan(T(π) * p / T(2)))
+    end
 end
 
 # Log-probability density function (for numerical stability)
@@ -118,12 +126,14 @@ function Base.rand(rng::Random.AbstractRNG, d::HyperbolicSecant)
 end
 
 # Moment generating function (for |t| < π/(2σ))
+# MGF: M(t) = exp(μ*t) * sec(σ*t) for |t| < π/(2σ)
 function mgf(d::HyperbolicSecant{T}, t::Real) where {T}
     abs(t) < T(π) / (T(2) * d.σ) || throw(DomainError(t, "MGF only defined for |t| < π/(2σ)"))
     return exp(d.μ * t) * sec(d.σ * t)
 end
 
 # Characteristic function
+# CF: φ(t) = exp(i*μ*t) * sech(σ*t)
 function cf(d::HyperbolicSecant{T}, t::Real) where {T}
     return exp(Complex{T}(0, 1) * d.μ * t) * sech(d.σ * t)
 end
