@@ -5,52 +5,28 @@ The Hyperbolic Secant distribution is a continuous probability distribution that
 It has interesting parallels to the normal distribution and is characterized by a bell-shaped curve that is 
 more peaked at the mode and has fatter tails compared to the normal distribution.
 
-The probability density function for the standard hyperbolic secant distribution (μ=0, σ=1) is:
-````math
-    f(z) = (1/2) * sech(π*z/2)    for z ∈ ℝ
-````
-
-For the general case with location parameter μ and scale parameter σ:
+The probability density function for the general case with location parameter μ and scale parameter σ:
 ````math
     f(x; μ, σ) = (1/(2σ)) * sech(π*(x-μ)/(2σ))    for x ∈ ℝ
 ````
 
 where sech(x) = 2/(e^x + e^(-x)) is the hyperbolic secant function.
 
-The distribution function (CDF) is:
-````math
-    F(x; μ, σ) = (2/π) * arctan(exp(π*(x-μ)/(2σ)))
-````
-
-The quantile function (inverse CDF) is:
-````math
-    F^(-1)(p; μ, σ) = μ + σ * (2/π) * log(tan(π*p/2))
-````
-
 # Arguments
 - `μ`: Location parameter (mean of the distribution)
 - `σ`: Scale parameter (standard deviation of the distribution). Must be positive.
-
-# Properties
-- Mean: μ
-- Variance: σ²
-- Skewness: 0 (symmetric distribution)
-- Kurtosis: 5 (excess kurtosis = 2)
 
 # Example
 ```julia
 using DistributionsHEP
 
-# Standard hyperbolic secant distribution (μ=0, σ=1)
-d1 = HyperbolicSecant()
-
 # Custom parameters
-d2 = HyperbolicSecant(2.0, 1.5)  # μ=2.0, σ=1.5
+d = HyperbolicSecant(2.0, 1.5)  # μ=2.0, σ=1.5
 
 # Evaluate PDF, CDF, and generate random samples
-pdf(d2, 2.0)
-cdf(d2, 2.0)
-rand(d2)
+pdf(d, 2.0)
+cdf(d, 2.0)
+rand(d)
 ```
 
 See also: The standard hyperbolic secant distribution has special mathematical properties:
@@ -102,12 +78,28 @@ function Distributions.pdf(d::HyperbolicSecant{T}, x::Real) where {T}
 end
 
 # Cumulative distribution function
+"""
+    cdf(d::HyperbolicSecant, x::Real)
+
+The cumulative distribution function in the closed form is:
+````math
+    F(x; μ, σ) = (2/π) * arctan(exp(π*(x-μ)/(2σ)))
+````
+"""
 function Distributions.cdf(d::HyperbolicSecant{T}, x::Real) where {T}
     z = (x - d.μ) / d.σ
     return T(2) / T(π) * atan(exp(T(π) * z / T(2)))
 end
 
 # Quantile function (inverse CDF)
+"""
+    quantile(d::HyperbolicSecant, p::Real)
+
+The quantile function in the closed form is:
+````math
+    F^(-1)(p; μ, σ) = μ + σ * (2/π) * log(tan(π*p/2))
+````
+"""
 function Distributions.quantile(d::HyperbolicSecant{T}, p::Real) where {T}
     0 < p < 1 || throw(ArgumentError("p must be in (0,1)"))
     return d.μ + d.σ * T(2) / T(π) * log(tan(T(π) * p / T(2)))
