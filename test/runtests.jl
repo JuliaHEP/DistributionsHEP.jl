@@ -5,4 +5,5 @@ using Test
     include("test-argusBG.jl")
     include("test-crystalball.jl")
     include("test-double-sided-crystal-ball.jl")
+    include("test-hyperbolic-secant.jl")
 end
