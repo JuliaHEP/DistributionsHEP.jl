@@ -42,4 +42,7 @@ include("double-sided-bifurcated-crystal-ball-das.jl")
 export ExtendedMixtureModel, extended_negative_log_likelihood
 include("extended-mixture-model.jl")
 
+export RelativisticBreitWigner
+include("RelativisticBreitWigner.jl")
+
 end
