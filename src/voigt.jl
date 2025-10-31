@@ -13,13 +13,14 @@ struct Voigt{T <: Real} <: ContinuousUnivariateDistribution
     end
 end
 
-function voigt(x::Real, μ::Real, σ::Real, γ::Real)
-    z = (x - μ + im * γ) / (σ * sqrt(2))
-    return real(exp(-z^2) * erfc(-im * z)) / (σ * sqrt(2π))
-end
+Voigt(μ::Real, σ::Real, γ::Real) = Voigt(promote(μ, σ, γ)...)
+Voigt(μ::Integer, σ::Integer, γ::Integer) = Voigt(float(μ), float(σ), float(γ))
 
 function Distributions.pdf(d::Voigt{T}, x::Real) where {T <: Real}
-    return voigt(x, d.μ, d.σ, d.γ)
+    let μ = d.μ, σ = d.σ, γ = d.γ
+        z = (x - μ + im * γ) / (σ * sqrt(T(2)))
+        real(exp(-z^2) * erfc(-im * z)) / (σ * sqrt(T(2π)))
+    end
 end
 
 Distributions.minimum(d::Voigt{T}) where {T <: Real} = T(-Inf)

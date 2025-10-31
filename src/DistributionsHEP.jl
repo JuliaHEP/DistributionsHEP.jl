@@ -45,4 +45,7 @@ include("extended-mixture-model.jl")
 export RelativisticBreitWigner
 include("RelativisticBreitWigner.jl")
 
+export Voigt
+include("voigt.jl")
+
 end

@@ -14,4 +14,5 @@ using Test
     include("test-logpdf-interface.jl")
     include("test-extended-mixture-model.jl")
     include("test-RelativisticBreitWigner.jl")
+    include("test-voigt.jl")
 end
