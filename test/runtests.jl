@@ -13,6 +13,5 @@ using Test
     include("test-constructor-promotion.jl")
     include("test-logpdf-interface.jl")
     include("test-extended-mixture-model.jl")
-    include("test-RelativisticBreitWigner.jl")
-    include("test-voigt.jl")
+    include("test-relativistic-breit-wigner.jl")
 end
