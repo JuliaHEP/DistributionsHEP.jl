@@ -25,6 +25,7 @@ include("crystalball.jl")
 export DoubleCrystalBall
 include("double-sided-crystal-ball.jl")
 
+# Adding Relativistic_Breit–Wigner_distribution
 export RelativisticBreitWigner
 include("relativistic-breit-wigner.jl")
 
