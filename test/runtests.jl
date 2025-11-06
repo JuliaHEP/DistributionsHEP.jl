@@ -5,6 +5,5 @@ using Test
     include("test-argusBG.jl")
     include("test-crystalball.jl")
     include("test-double-sided-crystal-ball.jl")
-    include("test-RelativisticBreitWigner.jl")
-    include("test-voigt.jl")
+    include("test-relativistic-breit-wigner.jl")
 end
