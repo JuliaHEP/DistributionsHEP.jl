@@ -26,9 +26,6 @@ export DoubleCrystalBall
 include("double-sided-crystal-ball.jl")
 
 export RelativisticBreitWigner
-include("RelativisticBreitWigner.jl")
-
-export Voigt
-include("voigt.jl")
+include("relativistic-breit-wigner.jl")
 
 end
