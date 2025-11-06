@@ -43,9 +43,6 @@ export ExtendedMixtureModel, extended_negative_log_likelihood
 include("extended-mixture-model.jl")
 
 export RelativisticBreitWigner
-include("RelativisticBreitWigner.jl")
-
-export Voigt
-include("voigt.jl")
+include("relativistic-breit-wigner.jl")
 
 end
