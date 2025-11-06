@@ -43,7 +43,7 @@ struct RelativisticBreitWigner{T <: Real} <: ContinuousUnivariateDistribution
     end
 end 
 
-# Including the type stability
+# Including the type stability (Flexible to all types of inputs)
 RelativisticBreitWigner(M::Real , Γ::Real) = RelativisticBreitWigner(promote(M, Γ)...)
 RelativisticBreitWigner(M::Integer, Γ::Integer) = RelativisticBreitWigner(float(M), float(Γ))
 
