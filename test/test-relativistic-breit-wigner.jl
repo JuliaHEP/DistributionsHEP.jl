@@ -5,8 +5,7 @@ using QuadGK
 using Test                 
 
 # Create a test instance of the RelativisticBreitWigner distribution
-# Parameters used: M = 0.1, Γ = 1.0
-d = RelativisticBreitWigner(0.1, 1.0)
+d = RelativisticBreitWigner(0.1, 1.0) # M, Γ
 
 ###########################################################
 #   MAIN TESTSET FOR THE RELATIVISTIC BREIT-WIGNER DIST   #
