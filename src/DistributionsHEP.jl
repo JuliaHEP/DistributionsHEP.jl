@@ -25,4 +25,13 @@ include("crystalball.jl")
 export DoubleCrystalBall
 include("double-sided-crystal-ball.jl")
 
+export BifurcatedGaussian
+include("bifurcated-gaussian.jl")
+
+export DoublesidedBifurcatedCrystalBall
+include("double-sided-bifurcated-crystal-ball.jl")
+
+export DasFunction
+include("das-function.jl")
+
 end
