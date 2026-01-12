@@ -25,7 +25,7 @@ struct DasFunction{T <: Real} <: ContinuousUnivariateDistribution
     αR::T
     nL::T
     # Precomputed constants for PDF calculation (from elementary parameters)
-    σL::T  # Left side parameter σ_L
+    σL::T    # Left side parameter σ_L
     σR::T    # Right side parameter σ_R
     xL::T    # Left transition point
     xR::T    # Right transition point
@@ -53,9 +53,10 @@ struct DasFunction{T <: Real} <: ContinuousUnivariateDistribution
         xL = μ - αL * σL
         xR = μ + αR * σR
 
-        # Calculate powers
+        # Calculate power
         NL = sqrt(one(T) + nL^2)
 
+        # Pre-compute constants
         BifGauss = BifurcatedGaussian(μ, σ, ψ)
         G_xL = pdf(BifGauss, xL)
         G_xR = pdf(BifGauss, xR)
@@ -78,24 +79,6 @@ struct DasFunction{T <: Real} <: ContinuousUnivariateDistribution
         new{T}(μ, σ, ψ, αL, αR, nL, σL, σR, xL, xR, NL, G_xL, G_xR, L_xL, L_xR, norm_const, p_xL, p_xR, p_mu)
     end
 end
-
-#=# Helper function power-law tail cdf
-function _power_law_tail_cdf(d::DoublesidedBifurcatedCrystalBall{T}, x::T) where {T <: Real}
-    if x <= d.xL
-        return d.norm_const * d.G_xL / d.L_xL * d.NL / (d.NL - 1) * (d.NL / (d.NL - d.L_xL * (x - d.xL)))^(d.NL-1)
-    elseif x >= d.xR
-        return d.norm_const * d.G_xR / d.L_xR * d.NR / (d.NR - 1) * (d.NR / (d.NR - d.L_xR * (x - d.xR)))^(d.NR-1)
-    end
-end
-
-# Helper function power-law tail quantile
-function _power_law_tail_quantile(d::DoublesidedBifurcatedCrystalBall{T}, p::T) where {T <: Real}
-    if p <= d.p_xL
-        return d.xL + (d.NL / d.L_xL) * (1 - (((d.NL - 1) * (p / d.norm_const) / (d.G_xL * d.NL))) ^ (1 / (1 - d.NL)))
-    elseif p >= d.p_xR
-        return d.xR + (d.NR / d.L_xR) * (1 - (((d.NR - 1) * (p / d.norm_const) / (d.G_xR * d.NR))) ^ (1 / (1 - d.NR)))
-    end
-end=#
 
 function Distributions.pdf(d::DasFunction{T}, x::Real) where {T <: Real}
     BifGauss = BifurcatedGaussian(d.μ, d.σ, d.ψ)

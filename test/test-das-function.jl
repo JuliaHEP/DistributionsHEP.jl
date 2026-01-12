@@ -130,17 +130,7 @@ end
     end
 end
 
-#=@testset "Symmetry" begin
-    # Test with symmetric parameters
-    d_sym = DoublesidedBifurcatedCrystalBall(0.0, 1.0, 0.0, 1.5, 2.0, 1.5, 2.0)  # μ, σ, ψ = 0 for symmetry
-
-    # PDF should be symmetric around the mean
-    x_test = 1.0
-    @test isapprox(pdf(d_sym, x_test), pdf(d_sym, -x_test); atol = 1e-10)
-
-    # CDF should satisfy: CDF(x) + CDF(-x) ≈ 1 for symmetric distribution
-    @test isapprox(cdf(d_sym, x_test) + cdf(d_sym, -x_test), 1.0; atol = 1e-8)
-end=#
+# Symmetry not tested as DasFunction is inherently asymmetric
 
 @testset "Type stability" begin
     d_float64 = DasFunction(0.0, 1.0, 0.25, 0.5, 1.25, 0.75)
