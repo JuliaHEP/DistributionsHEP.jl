@@ -27,7 +27,7 @@ struct DoublesidedBifurcatedCrystalBall{T <: Real} <: ContinuousUnivariateDistri
     nL::T
     nR::T
     # Precomputed constants for PDF calculation (from elementary parameters)
-    σL::T  # Left side parameter σ_L
+    σL::T    # Left side parameter σ_L
     σR::T    # Right side parameter σ_R
     xL::T    # Left transition point
     xR::T    # Right transition point
@@ -60,6 +60,7 @@ struct DoublesidedBifurcatedCrystalBall{T <: Real} <: ContinuousUnivariateDistri
         NL = sqrt(one(T) + nL^2)
         NR = sqrt(one(T) + nR^2)
 
+        # Pre-compute constants
         BifGauss = BifurcatedGaussian(μ, σ, ψ)
         G_xL = pdf(BifGauss, xL)
         G_xR = pdf(BifGauss, xR)
@@ -82,24 +83,6 @@ struct DoublesidedBifurcatedCrystalBall{T <: Real} <: ContinuousUnivariateDistri
         new{T}(μ, σ, ψ, αL, αR, nL, nR, σL, σR, xL, xR, NL, NR, G_xL, G_xR, L_xL, L_xR, norm_const, p_xL, p_xR, p_mu)
     end
 end
-
-#=# Helper function power-law tail cdf
-function _power_law_tail_cdf(d::DoublesidedBifurcatedCrystalBall{T}, x::T) where {T <: Real}
-    if x <= d.xL
-        return d.norm_const * d.G_xL / d.L_xL * d.NL / (d.NL - 1) * (d.NL / (d.NL - d.L_xL * (x - d.xL)))^(d.NL-1)
-    elseif x >= d.xR
-        return d.norm_const * d.G_xR / d.L_xR * d.NR / (d.NR - 1) * (d.NR / (d.NR - d.L_xR * (x - d.xR)))^(d.NR-1)
-    end
-end
-
-# Helper function power-law tail quantile
-function _power_law_tail_quantile(d::DoublesidedBifurcatedCrystalBall{T}, p::T) where {T <: Real}
-    if p <= d.p_xL
-        return d.xL + (d.NL / d.L_xL) * (1 - (((d.NL - 1) * (p / d.norm_const) / (d.G_xL * d.NL))) ^ (1 / (1 - d.NL)))
-    elseif p >= d.p_xR
-        return d.xR + (d.NR / d.L_xR) * (1 - (((d.NR - 1) * (p / d.norm_const) / (d.G_xR * d.NR))) ^ (1 / (1 - d.NR)))
-    end
-end=#
 
 function Distributions.pdf(d::DoublesidedBifurcatedCrystalBall{T}, x::Real) where {T <: Real}
     BifGauss = BifurcatedGaussian(d.μ, d.σ, d.ψ)
@@ -139,13 +122,13 @@ function Distributions.quantile(d::DoublesidedBifurcatedCrystalBall{T}, p::Real)
 
     if p < d.p_xL
         # Quantile is in the left power-law tail
-        return d.xL + (d.NL / d.L_xL) * (1 - (d.L_xL / d.G_xL * (d.NL -1) / d.NL * p / d.norm_const) ^ (1 / (1 - d.NL)))
+        return d.xL + (d.NL / d.L_xL) * (1 - (1 / const_left * p / d.norm_const) ^ (1 / (1 - d.NL)))
     elseif p >= d.p_xL && p <= d.p_mu
         return d.μ + d.σL * sqrt(T(2)) * erfinv((2 * d.σ / d.σL) * (p / d.norm_const - const_left + cdf(BifGauss, d.xL)) - 1)
     elseif p > d.p_mu && p <= d.p_xR
         return d.μ + d.σR * sqrt(T(2)) * erfinv((2 * d.σ / d.σR) * (p / d.norm_const - const_left + cdf(BifGauss, d.xL) - (d.σL / (2 * d.σ))))
     else
-        return d.xR + (d.NR / d.L_xR) * (1 - (d.L_xR / d.G_xR * (d.NR -1) / d.NR * ((p - d.p_xR) / d.norm_const - const_right)) ^ (1 / (1 - d.NR)))
+        return d.xR + (d.NR / d.L_xR) * (1 - (- 1 / const_right * ((p - d.p_xR) / d.norm_const - const_right)) ^ (1 / (1 - d.NR)))
     end
 end
 

@@ -4,29 +4,6 @@ function _check_bifurcated_gaussian_params(σ::T) where {T <: Real}
 end
 
 """
-    DoubleCrystalBall{T<:Real} <: ContinuousUnivariateDistribution
-
-The Double Crystal Ball distribution is a probability distribution commonly used in high-energy physics 
-to model various lossy processes with power-law tails on both sides of a Gaussian core.
-
-The probability density function is defined as:
-````math
-    f(x; μ, σ, α_L, n_L, α_R, n_R) = N A_L (B_L - x̂)^{-n_L}     for x̂ < -α_L
-                                   = N exp(-(x̂^2)/2)            for -α_L ≤ x̂ ≤ α_R
-                                   = N A_R (B_R + x̂)^{-n_R}     for x̂ > α_R
-````
-where x̂ = (x - μ) / σ.
-The parameters A_L, B_L, A_R, B_R are derived from α_L, n_L, α_R, n_R to ensure continuity 
-of the function and its first derivative. N is a normalization constant.
-
-# Arguments
-- `μ`: The mean of the Gaussian core.
-- `σ`: The standard deviation of the Gaussian core. Must be positive.
-- `αL`: The left transition point, defining where the left power-law tail begins.
-- `nL`: The exponent of the left power-law tail. Must be greater than 1.
-- `αR`: The right transition point, defining where the right power-law tail begins.
-- `nR`: The exponent of the right power-law tail. Must be greater than 1.
-
 # Example
 ```julia
 using DistributionsHEP
@@ -36,6 +13,7 @@ d = BifurcatedGaussian(0.0, 1.0, 0.5)  # μ, σ, ψ
 plot(-5, 5, x->pdf(d, x))
 ```
 """
+
 struct BifurcatedGaussian{T <: Real} <: ContinuousUnivariateDistribution
     μ::T # elementary parameters
     σ::T
@@ -58,14 +36,6 @@ struct BifurcatedGaussian{T <: Real} <: ContinuousUnivariateDistribution
     end
 end
 
-#=# Helper function to compute CDF values at transition points
-function _compute_transition_cdf_value(d::BifurcatedGaussian{T}) where {T <: Real}
-    # CDF value at transition point (from mathematical derivation)
-    cdf_at_mu = 
-
-    return cdf_at_minus_alphaL, cdf_at_plus_alphaR
-end=#
-
 
 function Distributions.pdf(d::BifurcatedGaussian{T}, x::Real) where {T <: Real}
     # left side
@@ -80,17 +50,8 @@ function Distributions.cdf(d::BifurcatedGaussian{T}, x::Real) where {T <: Real}
     cdf_at_mu = d.σL / (T(2) * d.σ)
 
     if x <= d.μ
-        # CDF for the left power-law tail (x̂ ≤ -αL)
-        # The integral is: ∫_{-∞}^{x̂} N * A_L * (B_L - t)^(-n_L) / σ dt
-        # = N * A_L / (n_L - 1) * (B_L - x̂)^(1 - n_L)
         return cdf_at_mu * (1 + erf((x - d.μ) / (d.σL * sqrt(T(2)))))
     else
-        # CDF for the right power-law tail (x̂ ≥ αR)
-        # CDF at αR + integral of right tail from αR to x̂
-        # The integral should be: ∫_{αR}^{x̂} N * A_R * (B_R + t)^(-n_R) dt
-        # = N * A_R / (n_R - 1) * ((B_R + αR)^(1-n_R) - (B_R + x̂)^(1-n_R))
-        # The integral is: ∫_{αR}^{x̂} N * A_R * (B_R + t)^(-n_R) / σ dt
-        # = N * A_R / (n_R - 1) * ((B_R + αR)^(1 - n_R) - (B_R + x̂)^(1 - n_R))
         return cdf_at_mu + d.σR / (T(2) * d.σ) * erf((x - d.μ) / (d.σR * sqrt(T(2))))
     end
 end
@@ -110,9 +71,6 @@ function Distributions.quantile(d::BifurcatedGaussian{T}, p::Real) where {T <: R
         # Quantile is in the left power-law tail
         return d.μ + d.σL * sqrt(T(2)) * erfinv(p * (T(2) * d.σ) / d.σL - 1)
     else
-        # Quantile is in the Gaussian core
-        # Solve: p = cdf_at_minus_alphaL + N * sqrt(π/2) * (erf(x̂/sqrt(2)) + erf(αL/sqrt(2)))
-        # Rearranging: erf(x̂/sqrt(2)) = (p - cdf_at_minus_alphaL) / (N * sqrt(π/2)) - erf(αL/sqrt(2))
         return d.μ + d.σR * sqrt(T(2)) * erfinv((p - cdf_at_mu) * (T(2) * d.σ) / d.σR)
     end
 end
