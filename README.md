@@ -12,8 +12,9 @@ any distributions requiring numerical integration can be wrapped ith [`Numerical
 - **ArgusBG**: ARGUS background distribution
 - **CrystalBall**, **DoubleCrystalBall**: One-sided and two-sided Crystal Ball distribution with Gaussian core and power-law tail
 - **HyperbolicSecant**: Hyperbolic secant distribution with location-scale family similar to normal distribution but with fatter tails
+- **BifurcatedGaussian**: Asymmetric Gaussian distribution with different scale parameters on left and right sides
 
-Mathematical derivations for Crystal Ball distributions are in [`docs/CrystalBallMath.md`](docs/CrystalBallMath.md), and formulas for ARGUS background distribution are in [`docs/ArgusBG.md`](docs/ArgusBG.md).
+Mathematical derivations for Crystal Ball distributions are in [`docs/CrystalBallMath.md`](docs/CrystalBallMath.md), formulas for ARGUS background distribution are in [`docs/ArgusBG.md`](docs/ArgusBG.md), and derivations for Bifurcated Gaussian (including skewness formula) are in [`docs/BifurcatedGaussianMath.md`](docs/BifurcatedGaussianMath.md).
 
 ## Installation
 
