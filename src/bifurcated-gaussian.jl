@@ -120,3 +120,38 @@ end
 
 Distributions.maximum(d::BifurcatedGaussian{T}) where {T<:Real} = T(Inf)
 Distributions.minimum(d::BifurcatedGaussian{T}) where {T<:Real} = T(-Inf)
+
+# Parameters
+Distributions.location(d::BifurcatedGaussian) = d.μ
+Distributions.scale(d::BifurcatedGaussian) = d.σ
+Distributions.params(d::BifurcatedGaussian) = (d.μ, d.σ, d.ψ)
+Distributions.partype(::BifurcatedGaussian{T}) where {T} = T
+
+# Basic statistics
+# Mean: E[X] = μ - (4σ/√(2π))κ, where κ = tanh(ψ)
+function Distributions.mean(d::BifurcatedGaussian{T}) where {T}
+    κ = tanh(d.ψ)
+    return d.μ - T(4) * d.σ / sqrt(T(2π)) * κ
+end
+
+Distributions.mode(d::BifurcatedGaussian) = d.μ
+Distributions.median(d::BifurcatedGaussian) = d.μ  # Median equals mode (peak), not mean
+
+# Variance: Var(X) = σ²(π + (3π-8)κ²)/π
+function Distributions.var(d::BifurcatedGaussian{T}) where {T}
+    κ = tanh(d.ψ)
+    return d.σ^2 * (T(π) + (T(3π) - T(8)) * κ^2) / T(π)
+end
+
+# Standard deviation
+function Distributions.std(d::BifurcatedGaussian{T}) where {T}
+    return sqrt(var(d))
+end
+
+# Skewness: γ₁(κ) = (2√2 κ((5π-16)κ²-π)) / (π+(3π-8)κ²)^(3/2)
+function Distributions.skewness(d::BifurcatedGaussian{T}) where {T}
+    κ = tanh(d.ψ)
+    numerator = T(2) * sqrt(T(2)) * κ * ((T(5π) - T(16)) * κ^2 - T(π))
+    denominator = (T(π) + (T(3π) - T(8)) * κ^2)^(T(3) / T(2))
+    return numerator / denominator
+end
