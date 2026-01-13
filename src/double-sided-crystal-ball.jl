@@ -15,11 +15,13 @@ to model various lossy processes with power-law tails on both sides of a Gaussia
 
 The probability density function is defined as:
 ````math
-    f(x; μ, σ, α_L, n_L, α_R, n_R) = N A_L (B_L - x̂)^{-n_L}     for x̂ < -α_L
-                                   = N exp(-(x̂^2)/2)            for -α_L ≤ x̂ ≤ α_R
-                                   = N A_R (B_R + x̂)^{-n_R}     for x̂ > α_R
+f(x; μ, σ, α_L, n_L, α_R, n_R) = \\begin{cases}
+    N A_L (B_L - \\hat{x})^{-n_L} & \\text{for } \\hat{x} < -α_L \\\\
+    N \\exp\\left(-\\frac{\\hat{x}^2}{2}\\right) & \\text{for } -α_L \\leq \\hat{x} \\leq α_R \\\\
+    N A_R (B_R + \\hat{x})^{-n_R} & \\text{for } \\hat{x} > α_R
+\\end{cases}
 ````
-where x̂ = (x - μ) / σ.
+where ``\\hat{x} = (x - μ) / σ``.
 The parameters A_L, B_L, A_R, B_R are derived from α_L, n_L, α_R, n_R to ensure continuity 
 of the function and its first derivative. N is a normalization constant.
 
