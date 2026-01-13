@@ -13,10 +13,12 @@ It consists of a Gaussian core and a power-law tail on one side (typically the l
 
 The probability density function is defined as:
 ````math
-    f(x; μ, σ, α, n) = N exp(-(x̂^2)/2)      for x̂ > -α
-                    = N  A (B - x̂)^{-n}     for x̂ ≤ -α
+f(x; μ, σ, α, n) = \\begin{cases}
+    N \\exp\\left(-\\frac{\\hat{x}^2}{2}\\right) & \\text{for } \\hat{x} > -α \\\\
+    N A (B - \\hat{x})^{-n} & \\text{for } \\hat{x} \\leq -α
+\\end{cases}
 ````
-where x̂ = (x - μ) / σ.
+where ``\\hat{x} = (x - μ) / σ``.
 The parameters A and B are derived from α and n to ensure continuity of the function and its first derivative.
 N is a normalization constant.
 
