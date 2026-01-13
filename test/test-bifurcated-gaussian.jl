@@ -5,12 +5,12 @@ using QuadGK
 using Test
 
 # Helper to check quantile accuracy for different σ values
-function check_quantile_accuracy(d, ps; atol = 1e-8)
+function check_quantile_accuracy(d, ps; atol=1e-8)
     for p in ps
         q = quantile(d, p)
         cdf_val = cdf(d, q)
-        @test isapprox(cdf_val, p; atol = atol)
-        if !isapprox(cdf_val, p; atol = atol)
+        @test isapprox(cdf_val, p; atol=atol)
+        if !isapprox(cdf_val, p; atol=atol)
             @warn "Quantile test failed" p q cdf_val
         end
     end
@@ -19,7 +19,7 @@ end
 # Test distribution with σ = 1 (standard case)
 d = BifurcatedGaussian(0.0, 1.0, 0.5)  # μ, σ, ψ
 
-@testset "BifurcatedGaussian Distribution" verbose=true begin
+@testset "BifurcatedGaussian Distribution" verbose = true begin
 @testset "Parameter validation" begin
     @test_throws ErrorException BifurcatedGaussian(0.0, -1.0, 0.5)  # negative σ
 end
@@ -36,11 +36,11 @@ end
     x_left_merge = d.μ
     pdf_value_left = pdf(d, x_left_merge - 1e-6)
     pdf_value_right = pdf(d, x_left_merge + 1e-6)
-    @test isapprox(pdf_value_left, pdf_value_right; atol = 1e-5)
+        @test isapprox(pdf_value_left, pdf_value_right; atol=1e-5)
 
     # PDF should integrate to 1
     numerical_integral = quadgk(x -> pdf(d, x), -Inf, Inf)[1]
-    @test isapprox(numerical_integral, 1.0; atol = 1e-6)
+        @test isapprox(numerical_integral, 1.0; atol=1e-6)
 end
 
 @testset "CDF properties" begin
@@ -60,7 +60,7 @@ end
     x_left_merge = d.μ
     cdf_value_left = cdf(d, x_left_merge - 1e-6)
     cdf_value_right = cdf(d, x_left_merge + 1e-6)
-    @test isapprox(cdf_value_left, cdf_value_right; atol = 1e-5)
+        @test isapprox(cdf_value_left, cdf_value_right; atol=1e-5)
 end
 
 @testset "Quantile properties" begin
@@ -107,7 +107,7 @@ end
         # Test PDF normalization via numerical integration
         # The PDF should integrate to 1 for all σ values
         numerical_integral = quadgk(x -> pdf(d_test, x), -Inf, Inf)[1]
-        @test isapprox(numerical_integral, 1.0; atol = 1e-6) ||
+            @test isapprox(numerical_integral, 1.0; atol=1e-6) ||
               @warn "PDF normalization failed for σ = $σ" numerical_integral
     end
 end
@@ -118,7 +118,7 @@ end
 
     # PDF should be symmetric around the mean
     x_test = 1.0
-    @test isapprox(pdf(d_sym, x_test), pdf(d_sym, -x_test); atol = 1e-10)
+        @test isapprox(pdf(d_sym, x_test), pdf(d_sym, -x_test); atol=1e-10)
 
     # CDF should satisfy: CDF(x) + CDF(-x) ≈ 1 for symmetric distribution
     @test isapprox(cdf(d_sym, x_test) + cdf(d_sym, -x_test), 1.0; atol = 1e-8)
