@@ -7,10 +7,10 @@ more peaked at the mode and has fatter tails compared to the normal distribution
 
 The probability density function for the general case with location parameter μ and scale parameter σ:
 ````math
-    f(x; μ, σ) = (1/(2σ)) * sech(π*(x-μ)/(2σ))    for x ∈ ℝ
+f(x; μ, σ) = \\frac{1}{2σ} \\operatorname{sech}\\left(\\frac{π(x-μ)}{2σ}\\right), \\quad x \\in \\mathbb{R}
 ````
 
-where sech(x) = 2/(e^x + e^(-x)) is the hyperbolic secant function.
+where ``\\operatorname{sech}(x) = 2 / (e^x + e^{-x})`` is the hyperbolic secant function.
 
 # Arguments
 - `μ`: Location parameter (mean of the distribution)
@@ -87,7 +87,7 @@ end
 
 The cumulative distribution function in the closed form is:
 ````math
-    F(x; μ, σ) = (2/π) * arctan(exp(π*(x-μ)/(2σ)))
+F(x; μ, σ) = \\frac{2}{π} \\arctan\\left(\\exp\\left(\\frac{π(x-μ)}{2σ}\\right)\\right)
 ````
 """
 function Distributions.cdf(d::HyperbolicSecant{T}, x::Real) where {T}
@@ -101,7 +101,7 @@ end
 
 The quantile function in the closed form is:
 ````math
-    F^(-1)(p; μ, σ) = μ + σ * (2/π) * log(tan(π*p/2))
+F^{-1}(p; μ, σ) = μ + σ \\cdot \\frac{2}{π} \\log\\left(\\tan\\left(\\frac{π p}{2}\\right)\\right)
 ````
 
 The formula explicitly handles the boundary cases:
