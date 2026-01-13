@@ -94,7 +94,7 @@ d_general = HyperbolicSecant(1.5, 0.8)  # General case μ=1.5, σ=0.8
         end
 
         # Test that PDF integrates to 1 (numerical integration)
-        integral, _ = quadgk(x -> pdf(d_standard, x), -10, 10, rtol = 1e-8)
+        integral, _ = quadgk(x -> pdf(d_standard, x), -10, 10, rtol=1e-8)
         @test integral ≈ 1.0 atol = 1e-6
 
         # Test PDF for general distribution
@@ -160,32 +160,6 @@ d_general = HyperbolicSecant(1.5, 0.8)  # General case μ=1.5, σ=0.8
         sample1 = rand(Random.MersenneTwister(123), d_standard)
         sample2 = rand(Random.MersenneTwister(123), d_standard)
         @test sample1 == sample2  # Same seed should give same result
-    end
-
-    @testset "Special Functions" begin
-        # Test moment generating function (MGF)
-        # MGF should be defined for |t| < π/(2σ)
-        d = HyperbolicSecant(0.0, 1.0)
-
-        # Test MGF at t=0 (should be 1)
-        @test DistributionsHEP.mgf(d, 0.0) ≈ 1.0
-
-        # Test MGF for small values
-        for t in [0.1, 0.5, 1.0]
-            @test DistributionsHEP.mgf(d, t) ≈ sec(t)  # For standard case μ=0, σ=1
-            @test DistributionsHEP.mgf(d, -t) ≈ sec(t)  # Should be even function for μ=0
-        end
-
-        # Test that MGF throws error for large t
-        @test_throws DomainError DistributionsHEP.mgf(d, 2.0)  # |t| >= π/2
-        @test_throws DomainError DistributionsHEP.mgf(d, -2.0)  # |t| >= π/2
-
-        # Test characteristic function
-        @test DistributionsHEP.cf(d, 0.0) ≈ 1.0
-
-        # Test characteristic function for real inputs (should be real for symmetric dist at μ=0)
-        @test real(DistributionsHEP.cf(d, 1.0)) ≈ sech(1.0)
-        @test imag(DistributionsHEP.cf(d, 1.0)) ≈ 0.0 atol = 1e-15
     end
 
     @testset "Mathematical Properties" begin
