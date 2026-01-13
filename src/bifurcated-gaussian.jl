@@ -1,5 +1,5 @@
 # Common parameter validation for bifurcated gaussian
-function _check_bifurcated_gaussian_params(σ::T) where {T <: Real}
+function _check_bifurcated_gaussian_params(σ::T) where {T<:Real}
     σ > zero(T) || error("σ (scale) must be positive.")
 end
 
@@ -53,8 +53,7 @@ quantile(d_asym, 0.5)
 rand(d_asym)
 ```
 """
-
-struct BifurcatedGaussian{T <: Real} <: ContinuousUnivariateDistribution
+struct BifurcatedGaussian{T<:Real} <: ContinuousUnivariateDistribution
     μ::T # elementary parameters
     σ::T
     ψ::T
@@ -62,7 +61,7 @@ struct BifurcatedGaussian{T <: Real} <: ContinuousUnivariateDistribution
     σL::T  # Left side parameter σ_L
     σR::T    # Right side parameter σ_R
 
-    function BifurcatedGaussian(μ::T, σ::T, ψ::T) where {T <: Real}
+    function BifurcatedGaussian(μ::T, σ::T, ψ::T) where {T<:Real}
         _check_bifurcated_gaussian_params(σ)
 
         # Calculate kappa
