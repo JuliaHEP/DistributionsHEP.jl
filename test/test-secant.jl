@@ -124,6 +124,15 @@ d_general = HyperbolicSecant(1.5, 0.8)  # General case μ=1.5, σ=0.8
             @test cdf(d_general, x) ≈ p atol = 1e-12
         end
 
+        # Test CDF and quantile are inverse functions (reverse direction)
+        for x in [-2.0, -1.0, -0.5, 0.0, 0.5, 1.0, 2.0]
+            p = cdf(d_standard, x)
+            @test quantile(d_standard, p) ≈ x atol = 1e-12
+
+            p = cdf(d_general, x)
+            @test quantile(d_general, p) ≈ x atol = 1e-12
+        end
+
         # Test specific quartiles for standard distribution
         # From theory: Q1 ≈ -0.561, Q3 ≈ 0.561
         @test quantile(d_standard, 0.25) ≈ -2 / π * log(1 + √2) atol = 1e-10
