@@ -3,6 +3,12 @@
 
 A continuous univariate distribution based on the ARGUS shape defined on the standard interval `[0, 1]`.
 
+The probability density function for the standard ARGUS distribution is:
+````math
+f(x; c, p) = \\frac{x (1 - x^2)^p \\exp\\left[c (1 - x^2)\\right]}{\\mathcal{N}}, \\quad x \\in [0, 1]
+````
+where ``\\mathcal{N}`` is the normalization constant ensuring ``\\int_0^1 f(x) dx = 1``.
+
 # Constructor
 ```julia
 StandardArgusBG(c, p)
@@ -38,6 +44,12 @@ end
 
 Create an ARGUS distribution on the interval `[a, b]` by linearly transforming
 the standard ARGUS distribution.
+
+The probability density function on the interval `[a, b]` is:
+````math
+f(x; c, p, a, b) = \\frac{1}{b - a} f_{\\text{std}}\\left(\\frac{x - a}{b - a}; c, p\\right), \\quad x \\in [a, b]
+````
+where ``f_{\\text{std}}`` is the standard ARGUS PDF on `[0, 1]`.
 
 # Arguments
 - `c`: Shape parameter (must be negative)
