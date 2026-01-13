@@ -177,11 +177,28 @@ d = BifurcatedGaussian(0.0, 1.0, 0.5)  # μ, σ, ψ
                 atol=1e-6,
                 rtol=1e-5,
             ) || @warn "Skewness mismatch" μ σ ψ numerical_skewness analytical_skewness
+
+            # Compute fourth moment about μ for kurtosis
+            m4, _ = quadgk(x -> (x - μ)^4 * pdf(d, x), -Inf, Inf, rtol=1e-8)
+
+            # Central fourth moment about the mean: μ₄ = m₄ - 4Δm₃ + 6Δ²m₂ - 3Δ⁴
+            μ₄ = m4 - 4 * Δ * m3 + 6 * Δ^2 * m2 - 3 * Δ^4
+
+            # Excess kurtosis = μ₄ / μ₂² - 3
+            numerical_kurtosis = μ₄ / (μ₂^2) - 3
+            analytical_kurtosis = kurtosis(d)
+            @test isapprox(
+                numerical_kurtosis,
+                analytical_kurtosis;
+                atol=1e-5,
+                rtol=1e-4,
+            ) || @warn "Kurtosis mismatch" μ σ ψ numerical_kurtosis analytical_kurtosis
         end
 
-        # Test that symmetric case has zero skewness
+        # Test that symmetric case has zero skewness and zero excess kurtosis
         d_sym = BifurcatedGaussian(0.0, 1.0, 0.0)
         @test isapprox(skewness(d_sym), 0.0; atol=1e-10)
+        @test isapprox(kurtosis(d_sym), 0.0; atol=1e-10)  # Excess kurtosis = 0 for normal
         @test isapprox(mean(d_sym), 0.0; atol=1e-10)  # Mean should equal μ for symmetric case
     end
 

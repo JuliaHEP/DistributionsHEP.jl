@@ -155,3 +155,11 @@ function Distributions.skewness(d::BifurcatedGaussian{T}) where {T}
     denominator = (T(π) + (T(3π) - T(8)) * κ^2)^(T(3) / T(2))
     return numerator / denominator
 end
+
+# Kurtosis (excess): γ₂(κ) = (4κ²[π(3π-8) - (3π²-40π+96)κ²]) / ([π+(3π-8)κ²]²)
+function Distributions.kurtosis(d::BifurcatedGaussian{T}) where {T}
+    κ = tanh(d.ψ)
+    numerator = T(4) * κ^2 * (T(π) * (T(3π) - T(8)) - (T(3π^2) - T(40π) + T(96)) * κ^2)
+    denominator = (T(π) + (T(3π) - T(8)) * κ^2)^2
+    return numerator / denominator
+end
