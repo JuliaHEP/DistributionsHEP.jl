@@ -64,18 +64,18 @@ d = BifurcatedGaussian(0.0, 1.0, 0.5)  # μ, σ, ψ
     end
 
     @testset "Quantile properties" begin
-        # Quantile should be inverse of CDF in different regions
-        x_left = -2.0
-        p_left = cdf(d, x_left)
-        @test quantile(d, p_left) ≈ x_left atol = 1e-9
+        # Test CDF and quantile are inverse functions (both directions)
+        # Direction 1: quantile(cdf(x)) ≈ x
+        for x in [-2.0, -1.0, -0.5, 0.0, 0.5, 1.0, 2.0, 3.0]
+            p = cdf(d, x)
+            @test quantile(d, p) ≈ x atol = 1e-9
+        end
 
-        x_core = 0.5
-        p_core = cdf(d, x_core)
-        @test quantile(d, p_core) ≈ x_core atol = 1e-9
-
-        x_right = 3.0
-        p_right = cdf(d, x_right)
-        @test quantile(d, p_right) ≈ x_right atol = 1e-9
+        # Direction 2: cdf(quantile(p)) ≈ p
+        for p in [0.01, 0.1, 0.25, 0.5, 0.75, 0.9, 0.99]
+            x = quantile(d, p)
+            @test cdf(d, x) ≈ p atol = 1e-9
+        end
 
         # Test edge cases
         @test quantile(d, 0.0) == -Inf
