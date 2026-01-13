@@ -11,6 +11,7 @@ any distributions requiring numerical integration can be wrapped ith [`Numerical
 - **Chebyshev**: Chebyshev polynomial distribution
 - **ArgusBG**: ARGUS background distribution
 - **CrystalBall**, **DoubleCrystalBall**: One-sided and two-sided Crystal Ball distribution with Gaussian core and power-law tail
+- **HyperbolicSecant**: Hyperbolic secant distribution with location-scale family similar to normal distribution but with fatter tails
 
 Mathematical derivations for Crystal Ball distributions are in [`docs/CrystalBallMath.md`](docs/CrystalBallMath.md), and formulas for ARGUS background distribution are in [`docs/ArgusBG.md`](docs/ArgusBG.md).
 

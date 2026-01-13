@@ -25,4 +25,7 @@ include("crystalball.jl")
 export DoubleCrystalBall
 include("double-sided-crystal-ball.jl")
 
+export HyperbolicSecant
+include("secant.jl")
+
 end
