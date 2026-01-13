@@ -75,6 +75,11 @@ struct BifurcatedGaussian{T<:Real} <: ContinuousUnivariateDistribution
     end
 end
 
+# Convenience constructors
+BifurcatedGaussian(μ::Real, σ::Real, ψ::Real) = BifurcatedGaussian(promote(μ, σ, ψ)...)
+BifurcatedGaussian(μ::Integer, σ::Integer, ψ::Integer) =
+    BifurcatedGaussian(float(μ), float(σ), float(ψ))
+
 
 function Distributions.pdf(d::BifurcatedGaussian{T}, x::Real) where {T<:Real}
     # left side
