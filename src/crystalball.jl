@@ -1,5 +1,5 @@
 # Common parameter validation
-function _check_crystalball_params(σ::T, α::T, n::T) where {T <: Real}
+function _check_crystalball_params(σ::T, α::T, n::T) where {T<:Real}
     σ > zero(T) || error("σ (scale) must be positive.")
     α > zero(T) || error("α (transition point) must be positive.")
     n > one(T) || error("n (power-law exponent) must be greater than 1.")
@@ -33,14 +33,15 @@ This implementation defines the standard Crystal Ball function with the power-la
 The struct also stores precomputed constants `norm_const` (N), `A_const` (A), and `B_const` (B) for efficient PDF and CDF calculations. These are not direct user inputs but are derived from the primary parameters.
 
 # Example
-```julia
+````julia
 using DistributionsHEP
 using Plots
 
 d = CrystalBall(0.0, 1.0, 2.0, 3.2)  # μ, σ, α, n
 plot(-2, 4, x->pdf(d, x))
+````
 """
-struct CrystalBall{T <: Real} <: ContinuousUnivariateDistribution
+struct CrystalBall{T<:Real} <: ContinuousUnivariateDistribution
     μ::T
     σ::T
     α::T
@@ -50,7 +51,7 @@ struct CrystalBall{T <: Real} <: ContinuousUnivariateDistribution
     A_const::T    # Tail parameter A
     B_const::T    # Tail parameter B
 
-    function CrystalBall(μ::T, σ::T, α::T, n::T) where {T <: Real}
+    function CrystalBall(μ::T, σ::T, α::T, n::T) where {T<:Real}
         _check_crystalball_params(σ, α, n)
         # Calculate normalization constant
         # The normalization should be: N = 1 / (C + D_val)
@@ -73,7 +74,7 @@ Compute the probability density function (PDF) of the Crystal Ball distribution 
 The function uses precomputed normalization and tail parameters stored within the `CrystalBall` struct for efficiency.
 It switches between the Gaussian core and the power-law tail based on the value of `x` relative to the transition point defined by `α`.
 """
-function Distributions.pdf(d::CrystalBall{T}, x::Real) where {T <: Real}
+function Distributions.pdf(d::CrystalBall{T}, x::Real) where {T<:Real}
     x̂ = (x - d.μ) / d.σ
     # Gaussian part
     x̂ > -d.α && return d.norm_const * exp(-x̂^2 / 2) / d.σ
@@ -88,7 +89,7 @@ Compute the cumulative distribution function (CDF) of the Crystal Ball distribut
 
 The CDF is calculated by integrating the PDF. This implementation handles the integral of the power-law tail and the Gaussian core separately, ensuring continuity at the transition point.
 """
-function Distributions.cdf(d::CrystalBall{T}, x::Real) where {T <: Real}
+function Distributions.cdf(d::CrystalBall{T}, x::Real) where {T<:Real}
     x̂ = (x - d.μ) / d.σ
 
     # Value of the CDF at the transition point x̂ = -α
@@ -118,7 +119,7 @@ The function determines if the probability `p` falls into the power-law tail or 
 and then inverts the corresponding CDF segment.
 Requires `SpecialFunctions.erf` and `SpecialFunctions.erfinv` to be available.
 """
-function Distributions.quantile(d::CrystalBall{T}, p::Real) where {T <: Real}
+function Distributions.quantile(d::CrystalBall{T}, p::Real) where {T<:Real}
     if p < zero(T) || p > one(T)
         throw(DomainError(p, "Probability p must be in [0,1]."))
     end
@@ -151,5 +152,5 @@ function Distributions.quantile(d::CrystalBall{T}, p::Real) where {T <: Real}
     return d.μ + d.σ * x̂
 end
 
-Distributions.maximum(d::CrystalBall{T}) where {T <: Real} = T(Inf)
-Distributions.minimum(d::CrystalBall{T}) where {T <: Real} = T(-Inf)
+Distributions.maximum(d::CrystalBall{T}) where {T<:Real} = T(Inf)
+Distributions.minimum(d::CrystalBall{T}) where {T<:Real} = T(-Inf)
