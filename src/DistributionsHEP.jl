@@ -28,4 +28,7 @@ include("double-sided-crystal-ball.jl")
 export HyperbolicSecant
 include("secant.jl")
 
+export BifurcatedGaussian
+include("bifurcated-gaussian.jl")
+
 end
