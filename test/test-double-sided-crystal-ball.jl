@@ -37,12 +37,12 @@ end
     end
 
     # PDF should be continuous at transition points
-    x_left_merge = -d.αL * d.σ + d.μ
+    x_left_merge = d.left_tail.x0
     pdf_value_left = pdf(d, x_left_merge - 1e-6)
     pdf_value_right = pdf(d, x_left_merge + 1e-6)
     @test isapprox(pdf_value_left, pdf_value_right; atol = 1e-5)
 
-    x_right_merge = d.αR * d.σ + d.μ
+    x_right_merge = d.right_tail.x0
     pdf_value_left = pdf(d, x_right_merge - 1e-6)
     pdf_value_right = pdf(d, x_right_merge + 1e-6)
     @test isapprox(pdf_value_left, pdf_value_right; atol = 1e-5)
@@ -66,12 +66,12 @@ end
     @test cdf(d, d.μ + 5 * d.σ) > 0.99  # Should be very close to 1
 
     # CDF should be continuous at transition points
-    x_left_merge = -d.αL * d.σ + d.μ
+    x_left_merge = d.left_tail.x0
     cdf_value_left = cdf(d, x_left_merge - 1e-6)
     cdf_value_right = cdf(d, x_left_merge + 1e-6)
     @test isapprox(cdf_value_left, cdf_value_right; atol = 1e-5)
 
-    x_right_merge = d.αR * d.σ + d.μ
+    x_right_merge = d.right_tail.x0
     cdf_value_left = cdf(d, x_right_merge - 1e-6)
     cdf_value_right = cdf(d, x_right_merge + 1e-6)
     @test isapprox(cdf_value_left, cdf_value_right; atol = 1e-5)
@@ -160,5 +160,25 @@ end
     @test minimum(d_float32) == -Inf32
     @test minimum(d_float64) == support(d_float64).lb
     @test maximum(d_float64) == support(d_float64).ub
+end
+
+@testset "Distributions.jl interface" begin
+    # Test params() returns the same values as creation parameters
+    test_cases = [
+        (0.0, 1.0, 1.5, 2.0, 2.0, 3.0),
+        (1.0, 2.0, 0.5, 1.5, 1.0, 2.5),
+        (-0.5, 0.8, 2.0, 3.0, 1.5, 4.0),
+    ]
+
+    for (μ, σ, αL, nL, αR, nR) in test_cases
+        d = DoubleCrystalBall(μ, σ, αL, nL, αR, nR)
+        p = params(d)
+        @test p == (μ, σ, αL, nL, αR, nR)
+    end
+
+    # Test location and scale
+    d = DoubleCrystalBall(1.5, 2.5, 1.0, 2.0, 1.5, 3.0)
+    @test location(d) == 1.5
+    @test scale(d) == 2.5
 end
 end

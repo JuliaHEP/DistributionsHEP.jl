@@ -33,7 +33,7 @@ end
     end
 
     # PDF should be continuous at transition point
-    x_merge = -d.α * d.σ + d.μ
+    x_merge = d.tail.x0
     pdf_value_left = pdf(d, x_merge + 1e-5)  # just above the transition point
     pdf_value_right = pdf(d, x_merge - 1e-5) # just below the transition point
     @test isapprox(pdf_value_left, pdf_value_right; atol = 1e-5)
@@ -57,7 +57,7 @@ end
     @test isapprox(cdf(d, d.μ + 5 * d.σ), 1; atol = 1e-5)
 
     # CDF should be continuous at transition point
-    x_merge = -d.α * d.σ + d.μ
+    x_merge = d.tail.x0
     cdf_value_left = cdf(d, x_merge + 1e-6)
     cdf_value_right = cdf(d, x_merge - 1e-6)
     @test isapprox(cdf_value_left, cdf_value_right; atol = 1e-5)

@@ -37,11 +37,11 @@ d = DoublesidedBifurcatedCrystalBall(0.0, 1.0, 0.25, 0.5, 1.25, 0.75, 1.5)  # μ
         end
 
         # PDF should be continuous at transition points
-        pdf_x_left_merge = d.left_tail.x_trans
+        pdf_x_left_merge = d.left_tail.x0
         pdf_value_left1 = pdf(d, pdf_x_left_merge - 1e-6)
         pdf_value_right1 = pdf(d, pdf_x_left_merge + 1e-6)
 
-        pdf_x_right_merge = d.right_tail.x_trans
+        pdf_x_right_merge = d.right_tail.x0
         pdf_value_left2 = pdf(d, pdf_x_right_merge - 1e-6)
         pdf_value_right2 = pdf(d, pdf_x_right_merge + 1e-6)
         @test isapprox(pdf_value_left1, pdf_value_right1; atol=1e-5)
@@ -66,7 +66,7 @@ d = DoublesidedBifurcatedCrystalBall(0.0, 1.0, 0.25, 0.5, 1.25, 0.75, 1.5)  # μ
         @test cdf(d, d.BifGauss.μ + 100.0 * d.BifGauss.σ) > 0.99  # Should be very close to 1
 
         # CDF should be continuous at transition point
-        x_left_merge = d.left_tail.x_trans
+        x_left_merge = d.left_tail.x0
         cdf_value_left1 = cdf(d, x_left_merge - 1e-6)
         cdf_value_right1 = cdf(d, x_left_merge + 1e-6)
 
@@ -74,7 +74,7 @@ d = DoublesidedBifurcatedCrystalBall(0.0, 1.0, 0.25, 0.5, 1.25, 0.75, 1.5)  # μ
         cdf_value_left = cdf(d, x_mu - 1e-6)
         cdf_value_right = cdf(d, x_mu + 1e-6)
 
-        x_right_merge = d.right_tail.x_trans
+        x_right_merge = d.right_tail.x0
         cdf_value_left2 = cdf(d, x_right_merge - 1e-6)
         cdf_value_right2 = cdf(d, x_right_merge + 1e-6)
         @test isapprox(cdf_value_left1, cdf_value_right1; atol=1e-5)
