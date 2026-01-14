@@ -5,6 +5,15 @@ function _check_crystalball_params(σ::T, α::T, n::T) where {T<:Real}
     n > one(T) || error("n (power-law exponent) must be greater than 1.")
 end
 
+function _compute_standard_tail_constants(μ::T, σ::T, α::T, n::T) where {T<:Real}
+    x0 = μ - α * σ
+    G_x0 = exp(-α^2 / 2)
+    L_x0 = α
+    N = n
+    return CrystalBallTail(G_x0, N, L_x0, x0)
+end
+
+
 """
     CrystalBall{T<:Real} <: ContinuousUnivariateDistribution
 
@@ -44,25 +53,20 @@ plot(-2, 4, x->pdf(d, x))
 struct CrystalBall{T<:Real} <: ContinuousUnivariateDistribution
     μ::T
     σ::T
-    α::T
-    n::T
+    tail::CrystalBallTail{T}  # Tail parameters
     # Precomputed constants for PDF calculation
     norm_const::T # Normalization constant N
-    A_const::T    # Tail parameter A
-    B_const::T    # Tail parameter B
 
     function CrystalBall(μ::T, σ::T, α::T, n::T) where {T<:Real}
         _check_crystalball_params(σ, α, n)
-        # Calculate normalization constant
-        # The normalization should be: N = 1 / (C + D_val)
-        # where C is the tail contribution and D_val is the Gaussian core contribution
-        C = n / α / (n - 1) * exp(-α^2 / 2)
-        D_val = sqrt(T(π) / 2) * (one(T) + erf(α / sqrt(T(2))))
-        N = one(T) / (C + D_val)
 
-        A = (n / α)^n * exp(-α^2 / 2)
-        B = n / α - α
-        new{T}(μ, σ, α, n, N, A, B)
+        tail = _compute_standard_tail_constants(μ, σ, α, n)
+
+        tail_contribution = _tail_norm_const(tail)
+        core_contribution = sqrt(T(π) / 2) * (one(T) + erf(α / sqrt(T(2))))
+        N = one(T) / (tail_contribution + core_contribution)
+
+        new{T}(μ, σ, tail, N)
     end
 end
 
@@ -75,11 +79,11 @@ The function uses precomputed normalization and tail parameters stored within th
 It switches between the Gaussian core and the power-law tail based on the value of `x` relative to the transition point defined by `α`.
 """
 function Distributions.pdf(d::CrystalBall{T}, x::Real) where {T<:Real}
+    x > d.tail.x0 && return d.norm_const * exp(-((x - d.μ) / d.σ)^2 / 2) / d.σ
+
     x̂ = (x - d.μ) / d.σ
-    # Gaussian part
-    x̂ > -d.α && return d.norm_const * exp(-x̂^2 / 2) / d.σ
-    # Power-law tail part
-    return d.norm_const * d.A_const * (d.B_const - x̂)^(-d.n) / d.σ
+    x̂0 = (d.tail.x0 - d.μ) / d.σ  # = -α
+    return d.norm_const * _tail_function_value(d.tail, x̂ - x̂0) / d.σ
 end
 
 """
@@ -90,23 +94,22 @@ Compute the cumulative distribution function (CDF) of the Crystal Ball distribut
 The CDF is calculated by integrating the PDF. This implementation handles the integral of the power-law tail and the Gaussian core separately, ensuring continuity at the transition point.
 """
 function Distributions.cdf(d::CrystalBall{T}, x::Real) where {T<:Real}
+    # Compute CDF constant using clean 4-parameter formulation
+    const_tail = _tail_norm_const(d.tail)
     x̂ = (x - d.μ) / d.σ
+    x̂0 = (d.tail.x0 - d.μ) / d.σ  # = -α
 
-    # Value of the CDF at the transition point x̂ = -α
-    cdf_at_minus_alpha =
-        d.norm_const * d.A_const / (d.n - 1) * (d.B_const - (-d.α))^(1 - d.n)
-
-    if x̂ <= -d.α
-        # CDF for the power-law tail part (x̂ ≤ -α)
-        # Integral of PDF from -Inf to x̂
-        return d.norm_const * d.A_const / (d.n - 1) * (d.B_const - x̂)^(1 - d.n)
+    if x <= d.tail.x0
+        # CDF for the power-law tail part: using clean 4-parameter formulation
+        # In scaled coordinates: CDF = const_tail * ((N - L_x0*(x̂-x̂0))/N)^(1-N)
+        return d.norm_const * const_tail * ((d.tail.N - d.tail.L_x0 * (x̂ - x̂0)) / d.tail.N)^(1 - d.tail.N)
     else
-        # CDF for the Gaussian part (x̂ > -α)
-        # CDF at -α + integral of Gaussian PDF from -α to x̂
-        # The integral is: ∫_{-α}^{x̂} N * exp(-t^2/2) / σ dt = N * sqrt(π/2) * (erf(x̂/sqrt(2)) + erf(α/sqrt(2)))
+        # CDF for the Gaussian part (x > x0)
+        # CDF at x0 + integral of Gaussian PDF from x0 to x
+        cdf_at_x0 = d.norm_const * const_tail
         integral_gaussian_part =
-            sqrt(T(π) / 2) * (erf(x̂ / sqrt(T(2))) + erf(d.α / sqrt(T(2))))
-        return cdf_at_minus_alpha + d.norm_const * integral_gaussian_part
+            sqrt(T(π) / 2) * (erf(x̂ / sqrt(T(2))) - erf(x̂0 / sqrt(T(2))))
+        return cdf_at_x0 + d.norm_const * integral_gaussian_part
     end
 end
 
@@ -126,30 +129,30 @@ function Distributions.quantile(d::CrystalBall{T}, p::Real) where {T<:Real}
     p == zero(T) && return T(-Inf)
     p == one(T) && return T(Inf)
 
-    # CDF value at the transition point x̂ = -α. (d.B_const + d.α) simplifies to (d.n / d.α)
-    cdf_at_minus_alpha = cdf(d, d.μ - d.α * d.σ)
+    # CDF value at the transition point x0
+    const_tail = _tail_norm_const(d.tail)
+    cdf_at_x0 = d.norm_const * const_tail
+    x̂0 = (d.tail.x0 - d.μ) / d.σ  # = -α
 
-    x̂ = zero(T) # Scaled quantile score
-    if p <= cdf_at_minus_alpha
-        # Quantile is in the power-law tail. Invert the tail CDF formula.
-        base = (p * (d.n - 1)) / (d.norm_const * d.A_const)
-        x̂ = d.B_const - base^(one(T) / (one(T) - d.n))
+    if p <= cdf_at_x0
+        # Quantile is in the power-law tail. Invert using clean 4-parameter formulation.
+        # From: p = norm_const * const_tail * ((N - L_x0*(x̂-x̂0))/N)^(1-N)
+        # Solve for x̂: x̂ = x̂0 + (N/L_x0) * (1 - (p/(norm_const*const_tail))^(1/(1-N)))
+        x̂ = x̂0 + (d.tail.N / d.tail.L_x0) * (1 - (p / (d.norm_const * const_tail))^(1 / (1 - d.tail.N)))
+        return d.μ + d.σ * x̂
     else
         # Quantile is in the Gaussian core. Invert the Gaussian core CDF formula.
-        # Solve: p = cdf_at_minus_alpha + N * sqrt(π/2) * (erf(x̂/sqrt(2)) + erf(α/sqrt(2)))
-        # Rearranging: erf(x̂/sqrt(2)) = (p - cdf_at_minus_alpha) / (N * sqrt(π/2)) - erf(α/sqrt(2))
-        term_for_erfinv_num = (p - cdf_at_minus_alpha)
+        # Solve: p = cdf_at_x0 + N * sqrt(π/2) * (erf(x̂/sqrt(2)) - erf(x̂0/sqrt(2)))
+        # Rearranging: erf(x̂/sqrt(2)) = (p - cdf_at_x0) / (N * sqrt(π/2)) + erf(x̂0/sqrt(2))
+        term_for_erfinv_num = (p - cdf_at_x0)
         term_for_erfinv_den = d.norm_const * sqrt(T(π) / T(2))
 
-        erf_alpha_sqrt2 = erf(d.α / sqrt(T(2)))
-        arg_erfinv = (term_for_erfinv_num / term_for_erfinv_den) - erf_alpha_sqrt2
+        erf_x0_sqrt2 = erf(x̂0 / sqrt(T(2)))
+        arg_erfinv = (term_for_erfinv_num / term_for_erfinv_den) + erf_x0_sqrt2
 
-        # arg_erfinv should be within [-1, 1] for erfinv. 
-        # Clamping might be needed for extreme numerical precision issues, but typically not.
         x̂ = sqrt(T(2)) * erfinv(arg_erfinv)
+        return d.μ + d.σ * x̂
     end
-
-    return d.μ + d.σ * x̂
 end
 
 Distributions.maximum(d::CrystalBall{T}) where {T<:Real} = T(Inf)

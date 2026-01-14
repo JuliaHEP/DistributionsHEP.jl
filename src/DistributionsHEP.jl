@@ -20,6 +20,7 @@ export ArgusBG
 include("argusBG.jl")
 
 export CrystalBall
+include("crystal-ball-tail.jl")
 include("crystalball.jl")
 
 export DoubleCrystalBall
