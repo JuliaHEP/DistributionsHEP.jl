@@ -5,6 +5,76 @@ function _check_crystalball_params(σ::T, α::T, n::T) where {T<:Real}
     n > one(T) || error("n (power-law exponent) must be greater than 1.")
 end
 
+"""
+    UnNormGauss{T<:Real}
+
+A struct that encapsulates the unnormalized Gaussian computation to avoid repeated
+and error-prone calculations of `exp(-((x - μ) / σ)^2 / 2)`.
+"""
+struct UnNormGauss{T<:Real}
+    μ::T  # Mean
+    σ::T  # Standard deviation
+end
+
+"""
+    _value(g::UnNormGauss, x::Real)
+
+Compute the unnormalized Gaussian value at point `x`:
+`exp(-((x - g.μ) / g.σ)^2 / 2)`
+"""
+function _value(g::UnNormGauss{T}, x::Real) where {T<:Real}
+    return exp(-((x - g.μ) / g.σ)^2 / 2)
+end
+
+"""
+    _scaled_coord(g::UnNormGauss, x::Real)
+
+Convert absolute coordinate `x` to scaled coordinate: `(x - g.μ) / g.σ`
+"""
+function _scaled_coord(g::UnNormGauss{T}, x::Real) where {T<:Real}
+    return (x - g.μ) / g.σ
+end
+
+"""
+    _from_scaled_coord(g::UnNormGauss, x̂::Real)
+
+Convert scaled coordinate `x̂` back to absolute coordinate: `g.μ + g.σ * x̂`
+"""
+function _from_scaled_coord(g::UnNormGauss{T}, x̂::Real) where {T<:Real}
+    return g.μ + g.σ * x̂
+end
+
+"""
+    _erf_scaled(g::UnNormGauss, x̂::Real)
+
+Compute `erf(x̂ / sqrt(2))` for scaled coordinate `x̂`.
+"""
+function _erf_scaled(g::UnNormGauss{T}, x̂::Real) where {T<:Real}
+    return erf(x̂ / sqrt(T(2)))
+end
+
+"""
+    _gaussian_cdf_integral(g::UnNormGauss, x̂1::Real, x̂0::Real)
+
+Compute the Gaussian CDF integral from scaled coordinate `x̂0` to `x̂1`:
+`sqrt(π/2) * (erf(x̂1/sqrt(2)) - erf(x̂0/sqrt(2)))`
+"""
+function _gaussian_cdf_integral(g::UnNormGauss{T}, x̂1::Real, x̂0::Real) where {T<:Real}
+    return sqrt(T(π) / T(2)) * (_erf_scaled(g, x̂1) - _erf_scaled(g, x̂0))
+end
+
+"""
+    _gaussian_quantile(g::UnNormGauss, arg_erfinv::Real)
+
+Compute the quantile from the argument to `erfinv`:
+Converts `arg_erfinv` to scaled coordinate `x̂ = sqrt(2) * erfinv(arg_erfinv)`,
+then returns the absolute coordinate.
+"""
+function _gaussian_quantile(g::UnNormGauss{T}, arg_erfinv::Real) where {T<:Real}
+    x̂ = sqrt(T(2)) * erfinv(arg_erfinv)
+    return _from_scaled_coord(g, x̂)
+end
+
 function _compute_standard_tail_constants(μ::T, σ::T, α::T, n::T) where {T<:Real}
     x0 = μ - α * σ
     G_x0 = exp(-α^2 / 2)
@@ -51,9 +121,8 @@ plot(-2, 4, x->pdf(d, x))
 ````
 """
 struct CrystalBall{T<:Real} <: ContinuousUnivariateDistribution
-    μ::T
-    σ::T
     tail::CrystalBallTail{T}  # Tail parameters
+    gauss::UnNormGauss{T}      # Unnormalized Gaussian helper
     # Precomputed constants for PDF calculation
     norm_const::T # Normalization constant N
 
@@ -61,12 +130,13 @@ struct CrystalBall{T<:Real} <: ContinuousUnivariateDistribution
         _check_crystalball_params(σ, α, n)
 
         tail = _compute_standard_tail_constants(μ, σ, α, n)
+        gauss = UnNormGauss(μ, σ)
 
         tail_contribution = _tail_norm_const(tail)
         core_contribution = sqrt(T(π) / 2) * (one(T) + erf(α / sqrt(T(2))))
         N = one(T) / (tail_contribution + core_contribution)
 
-        new{T}(μ, σ, tail, N)
+        new{T}(tail, gauss, N)
     end
 end
 
@@ -79,11 +149,11 @@ The function uses precomputed normalization and tail parameters stored within th
 It switches between the Gaussian core and the power-law tail based on the value of `x` relative to the transition point defined by `α`.
 """
 function Distributions.pdf(d::CrystalBall{T}, x::Real) where {T<:Real}
-    x > d.tail.x0 && return d.norm_const * exp(-((x - d.μ) / d.σ)^2 / 2) / d.σ
+    x > d.tail.x0 && return d.norm_const * _value(d.gauss, x) / d.gauss.σ
 
-    x̂ = (x - d.μ) / d.σ
-    x̂0 = (d.tail.x0 - d.μ) / d.σ  # = -α
-    return d.norm_const * _tail_function_value(d.tail, x̂ - x̂0) / d.σ
+    x̂ = _scaled_coord(d.gauss, x)
+    x̂0 = _scaled_coord(d.gauss, d.tail.x0)  # = -α
+    return d.norm_const * _tail_function_value(d.tail, x̂ - x̂0) / d.gauss.σ
 end
 
 """
@@ -96,19 +166,15 @@ The CDF is calculated by integrating the PDF. This implementation handles the in
 function Distributions.cdf(d::CrystalBall{T}, x::Real) where {T<:Real}
     # Compute CDF constant using clean 4-parameter formulation
     const_tail = _tail_norm_const(d.tail)
-    x̂ = (x - d.μ) / d.σ
-    x̂0 = (d.tail.x0 - d.μ) / d.σ  # = -α
+    (; N, L_x0) = d.tail
+    x̂ = _scaled_coord(d.gauss, x)
+    x̂0 = -L_x0  # = (d.tail.x0 - μ) / σ
 
     if x <= d.tail.x0
-        # CDF for the power-law tail part: using clean 4-parameter formulation
-        # In scaled coordinates: CDF = const_tail * ((N - L_x0*(x̂-x̂0))/N)^(1-N)
-        return d.norm_const * const_tail * ((d.tail.N - d.tail.L_x0 * (x̂ - x̂0)) / d.tail.N)^(1 - d.tail.N)
+        return d.norm_const * const_tail * ((N - L_x0 * (x̂ - x̂0)) / N)^(1 - N)
     else
-        # CDF for the Gaussian part (x > x0)
-        # CDF at x0 + integral of Gaussian PDF from x0 to x
         cdf_at_x0 = d.norm_const * const_tail
-        integral_gaussian_part =
-            sqrt(T(π) / 2) * (erf(x̂ / sqrt(T(2))) - erf(x̂0 / sqrt(T(2))))
+        integral_gaussian_part = _gaussian_cdf_integral(d.gauss, x̂, x̂0)
         return cdf_at_x0 + d.norm_const * integral_gaussian_part
     end
 end
@@ -129,31 +195,30 @@ function Distributions.quantile(d::CrystalBall{T}, p::Real) where {T<:Real}
     p == zero(T) && return T(-Inf)
     p == one(T) && return T(Inf)
 
+    (; N, L_x0) = d.tail
+
     # CDF value at the transition point x0
     const_tail = _tail_norm_const(d.tail)
     cdf_at_x0 = d.norm_const * const_tail
-    x̂0 = (d.tail.x0 - d.μ) / d.σ  # = -α
+    x̂0 = -L_x0  # = (d.tail.x0 - μ) / σ
 
     if p <= cdf_at_x0
-        # Quantile is in the power-law tail. Invert using clean 4-parameter formulation.
-        # From: p = norm_const * const_tail * ((N - L_x0*(x̂-x̂0))/N)^(1-N)
-        # Solve for x̂: x̂ = x̂0 + (N/L_x0) * (1 - (p/(norm_const*const_tail))^(1/(1-N)))
-        x̂ = x̂0 + (d.tail.N / d.tail.L_x0) * (1 - (p / (d.norm_const * const_tail))^(1 / (1 - d.tail.N)))
-        return d.μ + d.σ * x̂
+        x̂ = x̂0 + (N / L_x0) * (1 - (p / (d.norm_const * const_tail))^(1 / (1 - N)))
+        return _from_scaled_coord(d.gauss, x̂)
     else
-        # Quantile is in the Gaussian core. Invert the Gaussian core CDF formula.
-        # Solve: p = cdf_at_x0 + N * sqrt(π/2) * (erf(x̂/sqrt(2)) - erf(x̂0/sqrt(2)))
-        # Rearranging: erf(x̂/sqrt(2)) = (p - cdf_at_x0) / (N * sqrt(π/2)) + erf(x̂0/sqrt(2))
         term_for_erfinv_num = (p - cdf_at_x0)
         term_for_erfinv_den = d.norm_const * sqrt(T(π) / T(2))
 
-        erf_x0_sqrt2 = erf(x̂0 / sqrt(T(2)))
+        erf_x0_sqrt2 = _erf_scaled(d.gauss, x̂0)
         arg_erfinv = (term_for_erfinv_num / term_for_erfinv_den) + erf_x0_sqrt2
 
-        x̂ = sqrt(T(2)) * erfinv(arg_erfinv)
-        return d.μ + d.σ * x̂
+        return _gaussian_quantile(d.gauss, arg_erfinv)
     end
 end
 
 Distributions.maximum(d::CrystalBall{T}) where {T<:Real} = T(Inf)
 Distributions.minimum(d::CrystalBall{T}) where {T<:Real} = T(-Inf)
+
+# Distributions.jl interface methods
+Distributions.location(d::CrystalBall) = d.gauss.μ
+Distributions.scale(d::CrystalBall) = d.gauss.σ
