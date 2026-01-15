@@ -66,8 +66,8 @@ struct DoubleCrystalBall{T<:Real} <: ContinuousUnivariateDistribution
 
         gauss = UnNormGauss(μ, σ)
 
-        norm_left_tail = _tail_norm_const(left_tail)
-        norm_right_tail = -_tail_norm_const(right_tail)  # Right tail has negative L_x0, so negate
+        norm_left_tail = _norm_const(left_tail)
+        norm_right_tail = -_norm_const(right_tail)  # Right tail has negative L_x0, so negate
         core_contribution = sqrt(T(π) / 2) * (erf(αR / sqrt(T(2))) + erf(αL / sqrt(T(2))))
         N = one(T) / (norm_left_tail + norm_right_tail + core_contribution)
 
@@ -79,7 +79,7 @@ end
 # Using clean 4-parameter formulation
 function _compute_transition_cdf_values(d::DoubleCrystalBall{T}) where {T<:Real}
     # CDF values at transition points using clean formulation
-    const_left = _tail_norm_const(d.left_tail)
+    const_left = _norm_const(d.left_tail)
     cdf_at_minus_alphaL = d.norm_const * const_left
     # Compute αL and αR from x0: x0L = μ - αL*σ, x0R = μ + αR*σ
     x̂0L = _scaled_coord(d.gauss, d.left_tail.x0)  # = -αL
@@ -99,7 +99,7 @@ function Distributions.pdf(d::DoubleCrystalBall{T}, x::Real) where {T<:Real}
     # Left power-law tail: using clean 4-parameter formulation (in scaled coordinates)
     if x < d.left_tail.x0
         x̂0L = _scaled_coord(d.gauss, d.left_tail.x0)  # = -αL
-        return d.norm_const * _tail_function_value(d.left_tail, x̂ - x̂0L) / d.gauss.σ
+        return d.norm_const * _value(d.left_tail, x̂ - x̂0L) / d.gauss.σ
     end
     # Gaussian core
     if x <= d.right_tail.x0
@@ -107,14 +107,14 @@ function Distributions.pdf(d::DoubleCrystalBall{T}, x::Real) where {T<:Real}
     end
     # Right power-law tail: using clean 4-parameter formulation (in scaled coordinates)
     x̂0R = _scaled_coord(d.gauss, d.right_tail.x0)  # = αR
-    return d.norm_const * _tail_function_value(d.right_tail, x̂ - x̂0R) / d.gauss.σ
+    return d.norm_const * _value(d.right_tail, x̂ - x̂0R) / d.gauss.σ
 end
 
 function Distributions.cdf(d::DoubleCrystalBall{T}, x::Real) where {T<:Real}
     # CDF values at transition points using clean 4-parameter formulation
     cdf_at_minus_alphaL, cdf_at_plus_alphaR = _compute_transition_cdf_values(d)
-    const_left = _tail_norm_const(d.left_tail)
-    const_right = -_tail_norm_const(d.right_tail)  # Right tail has negative L_x0, so negate
+    const_left = _norm_const(d.left_tail)
+    const_right = -_norm_const(d.right_tail)  # Right tail has negative L_x0, so negate
     x̂ = _scaled_coord(d.gauss, x)
     x̂0L = _scaled_coord(d.gauss, d.left_tail.x0)  # = -αL
     x̂0R = _scaled_coord(d.gauss, d.right_tail.x0)  # = αR
@@ -143,8 +143,8 @@ function Distributions.quantile(d::DoubleCrystalBall{T}, p::Real) where {T<:Real
     # CDF values at transition points (same as in CDF function)
     cdf_at_minus_alphaL, cdf_at_plus_alphaR = _compute_transition_cdf_values(d)
 
-    const_left = _tail_norm_const(d.left_tail)
-    const_right = -_tail_norm_const(d.right_tail)  # Right tail has negative L_x0, so negate
+    const_left = _norm_const(d.left_tail)
+    const_right = -_norm_const(d.right_tail)  # Right tail has negative L_x0, so negate
     x̂0L = _scaled_coord(d.gauss, d.left_tail.x0)  # = -αL
     x̂0R = _scaled_coord(d.gauss, d.right_tail.x0)  # = αR
 

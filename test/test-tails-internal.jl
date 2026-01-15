@@ -33,7 +33,7 @@ _compute_standard_tail_constants = DistributionsHEP._compute_standard_tail_const
     # Test 2: _integral(t, _integral_inversion(integral)) ≈ integral
     @testset "Round-trip: inversion then integral" begin
         # Test with various integral values (should be in [0, const_tail])
-        const_tail = DistributionsHEP._tail_norm_const(tail)
+        const_tail = DistributionsHEP._norm_const(tail)
         test_integrals = [0.01 * const_tail, 0.1 * const_tail, 0.3 * const_tail,
             0.5 * const_tail, 0.7 * const_tail, 0.9 * const_tail,
             0.99 * const_tail]

@@ -132,7 +132,7 @@ struct CrystalBall{T<:Real} <: ContinuousUnivariateDistribution
         tail = _compute_standard_tail_constants(μ, σ, α, n)
         gauss = UnNormGauss(μ, σ)
 
-        tail_contribution = _tail_norm_const(tail)
+        tail_contribution = _norm_const(tail)
         core_contribution = sqrt(T(π) / 2) * (one(T) + erf(α / sqrt(T(2))))
         N = one(T) / (tail_contribution + core_contribution)
 
@@ -153,7 +153,7 @@ function Distributions.pdf(d::CrystalBall{T}, x::Real) where {T<:Real}
 
     x̂ = _scaled_coord(d.gauss, x)
     x̂0 = _scaled_coord(d.gauss, d.tail.x0)  # = -α
-    return d.norm_const * _tail_function_value(d.tail, x̂ - x̂0) / d.gauss.σ
+    return d.norm_const * _value(d.tail, x̂ - x̂0) / d.gauss.σ
 end
 
 """
@@ -165,7 +165,7 @@ The CDF is calculated by integrating the PDF. This implementation handles the in
 """
 function Distributions.cdf(d::CrystalBall{T}, x::Real) where {T<:Real}
     # Compute CDF constant using clean 4-parameter formulation
-    const_tail = _tail_norm_const(d.tail)
+    const_tail = _norm_const(d.tail)
     (; N, L_x0) = d.tail
     x̂ = _scaled_coord(d.gauss, x)
     x̂0 = -L_x0  # = (d.tail.x0 - μ) / σ
@@ -198,7 +198,7 @@ function Distributions.quantile(d::CrystalBall{T}, p::Real) where {T<:Real}
     (; N, L_x0) = d.tail
 
     # CDF value at the transition point x0
-    const_tail = _tail_norm_const(d.tail)
+    const_tail = _norm_const(d.tail)
     cdf_at_x0 = d.norm_const * const_tail
     x̂0 = -L_x0  # = (d.tail.x0 - μ) / σ
 

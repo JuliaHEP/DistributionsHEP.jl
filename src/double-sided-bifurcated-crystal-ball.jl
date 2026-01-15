@@ -103,8 +103,8 @@ struct DoublesidedBifurcatedCrystalBall{T<:Real} <: ContinuousUnivariateDistribu
         right_tail = CrystalBallTail(BifGauss, nR, xR)
 
         # Calculate normalization constant
-        norm_const_left = _tail_norm_const(left_tail)
-        norm_const_right = -_tail_norm_const(right_tail)  # Negative for right tail
+        norm_const_left = _norm_const(left_tail)
+        norm_const_right = -_norm_const(right_tail)  # Negative for right tail
         norm_const_core = cdf(BifGauss, xR) - cdf(BifGauss, xL)
 
         norm_const = one(T) / (norm_const_left + norm_const_right + norm_const_core)
@@ -133,11 +133,11 @@ based on the value of `x` relative to the transition points xL and xR.
 """
 function Distributions.pdf(d::DoublesidedBifurcatedCrystalBall{T}, x::Real) where {T<:Real}
     # left tail: using clean 4-parameter formulation
-    x < d.left_tail.x0 && return d.norm_const * _tail_function_value(d.left_tail, x - d.left_tail.x0)
+    x < d.left_tail.x0 && return d.norm_const * _value(d.left_tail, x - d.left_tail.x0)
     # core
     x >= d.left_tail.x0 && x <= d.right_tail.x0 && return d.norm_const * pdf(d.BifGauss, x)
     # right tail: using clean 4-parameter formulation
-    return d.norm_const * _tail_function_value(d.right_tail, x - d.right_tail.x0)
+    return d.norm_const * _value(d.right_tail, x - d.right_tail.x0)
 end
 
 """
@@ -149,8 +149,8 @@ The CDF is calculated by integrating the PDF. This implementation handles the in
 and the bifurcated Gaussian core separately, ensuring continuity at the transition points.
 """
 function Distributions.cdf(d::DoublesidedBifurcatedCrystalBall{T}, x::Real) where {T<:Real}
-    const_left = _tail_norm_const(d.left_tail)
-    const_right = -_tail_norm_const(d.right_tail)
+    const_left = _norm_const(d.left_tail)
+    const_right = -_norm_const(d.right_tail)
 
     if x < d.left_tail.x0
         # Left tail: using clean 4-parameter formulation
@@ -179,8 +179,8 @@ function Distributions.quantile(d::DoublesidedBifurcatedCrystalBall{T}, p::Real)
     p == zero(T) && return T(-Inf)
     p == one(T) && return T(Inf)
 
-    const_left = _tail_norm_const(d.left_tail)
-    const_right = -_tail_norm_const(d.right_tail)
+    const_left = _norm_const(d.left_tail)
+    const_right = -_norm_const(d.right_tail)
 
     if p < d.p_xL
         # Quantile is in the left power-law tail: using clean 4-parameter formulation

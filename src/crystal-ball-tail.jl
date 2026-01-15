@@ -9,12 +9,12 @@ struct CrystalBallTail{T<:Real}
     x0::T         # x0: Absolute transition point
 end
 
-function _tail_norm_const(tail::CrystalBallTail{T}) where {T<:Real}
+function _norm_const(tail::CrystalBallTail{T}) where {T<:Real}
     (; G_x0, N, L_x0) = tail
     return G_x0 / L_x0 * N / (N - 1)
 end
 
-function _tail_function_value(tail::CrystalBallTail{T}, offset::T) where {T<:Real}
+function _value(tail::CrystalBallTail{T}, offset::T) where {T<:Real}
     (; G_x0, N, L_x0) = tail
     return G_x0 * (N / (N - L_x0 * offset))^N
 end
@@ -38,7 +38,7 @@ function _integral(t::CrystalBallTail{T}, a::T) where {T<:Real}
     (; G_x0, N, L_x0, x0) = t
     # Compute offset from transition point
     offset_a = a - x0
-    const_tail = _tail_norm_const(t)
+    const_tail = _norm_const(t)
     return const_tail * ((N - L_x0 * offset_a) / N)^(one(T) - N)
 end
 
@@ -54,7 +54,7 @@ Returns the value of `a` (in absolute coordinates).
 """
 function _integral_inversion(t::CrystalBallTail{T}, integral::T) where {T<:Real}
     (; N, L_x0, x0) = t
-    const_tail = _tail_norm_const(t)
+    const_tail = _norm_const(t)
     # 
     ratio = integral / const_tail
     ratio_power = ratio^(one(T) / (one(T) - N))
