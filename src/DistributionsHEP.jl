@@ -32,7 +32,7 @@ include("secant.jl")
 export BifurcatedGaussian
 include("bifurcated-gaussian.jl")
 
-export DoublesidedBifurcatedCrystalBall
+export DoubleSidedBifurcatedCrystalBall
 include("double-sided-bifurcated-crystal-ball.jl")
 
 end

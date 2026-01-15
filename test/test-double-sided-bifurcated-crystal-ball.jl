@@ -17,15 +17,15 @@ function check_quantile_accuracy(d, ps; atol=1e-8)
 end
 
 # Test distribution with σ = 1 (standard case)
-d = DoublesidedBifurcatedCrystalBall(0.0, 1.0, 0.25, 0.5, 1.25, 0.75, 1.5)  # μ, σ, ψ, αL, nL, αR, nR
+d = DoubleSidedBifurcatedCrystalBall(0.0, 1.0, 0.25, 0.5, 1.25, 0.75, 1.5)  # μ, σ, ψ, αL, nL, αR, nR
 
-@testset "DoublesidedBifurcatedCrystalBall Distribution" verbose = true begin
+@testset "DoubleSidedBifurcatedCrystalBall Distribution" verbose = true begin
     @testset "Parameter validation" begin
-        @test_throws ErrorException DoublesidedBifurcatedCrystalBall(0.0, -1.0, 0.25, 0.5, 1.25, 0.75, 1.5)  # negative σ
-        @test_throws ErrorException DoublesidedBifurcatedCrystalBall(0.0, 1.0, 0.25, -0.5, 1.25, 0.75, 1.5)  # negative αL
-        @test_throws ErrorException DoublesidedBifurcatedCrystalBall(0.0, 1.0, 0.25, 0.5, -1.25, 0.75, 1.5)  # negative nL
-        @test_throws ErrorException DoublesidedBifurcatedCrystalBall(0.0, 1.0, 0.25, 0.5, 1.25, -0.75, 1.5)  # negative αR
-        @test_throws ErrorException DoublesidedBifurcatedCrystalBall(0.0, 1.0, 0.25, 0.5, 1.25, 0.75, -1.5)  # negative nR
+        @test_throws ErrorException DoubleSidedBifurcatedCrystalBall(0.0, -1.0, 0.25, 0.5, 1.25, 0.75, 1.5)  # negative σ
+        @test_throws ErrorException DoubleSidedBifurcatedCrystalBall(0.0, 1.0, 0.25, -0.5, 1.25, 0.75, 1.5)  # negative αL
+        @test_throws ErrorException DoubleSidedBifurcatedCrystalBall(0.0, 1.0, 0.25, 0.5, -1.25, 0.75, 1.5)  # negative nL
+        @test_throws ErrorException DoubleSidedBifurcatedCrystalBall(0.0, 1.0, 0.25, 0.5, 1.25, -0.75, 1.5)  # negative αR
+        @test_throws ErrorException DoubleSidedBifurcatedCrystalBall(0.0, 1.0, 0.25, 0.5, 1.25, 0.75, -1.5)  # negative nR
     end
 
     @testset "PDF properties" begin
@@ -114,7 +114,7 @@ d = DoublesidedBifurcatedCrystalBall(0.0, 1.0, 0.25, 0.5, 1.25, 0.75, 1.5)  # μ
         ps = [0.01, 0.1, 0.5, 0.9, 0.99, 0.999]
 
         for (μ, σ, ψ, αL, nL, αR, nR) in test_cases
-            d_test = DoublesidedBifurcatedCrystalBall(μ, σ, ψ, αL, nL, αR, nR)
+            d_test = DoubleSidedBifurcatedCrystalBall(μ, σ, ψ, αL, nL, αR, nR)
 
             # Test quantile accuracy
             check_quantile_accuracy(d_test, ps)
@@ -133,7 +133,7 @@ d = DoublesidedBifurcatedCrystalBall(0.0, 1.0, 0.25, 0.5, 1.25, 0.75, 1.5)  # μ
 
     @testset "Symmetry" begin
         # Test with symmetric parameters
-        d_sym = DoublesidedBifurcatedCrystalBall(0.0, 1.0, 0.0, 1.5, 2.0, 1.5, 2.0)  # μ, σ, ψ = 0 for symmetry
+        d_sym = DoubleSidedBifurcatedCrystalBall(0.0, 1.0, 0.0, 1.5, 2.0, 1.5, 2.0)  # μ, σ, ψ = 0 for symmetry
 
         # PDF should be symmetric around the mean
         x_test = 1.0
@@ -144,8 +144,8 @@ d = DoublesidedBifurcatedCrystalBall(0.0, 1.0, 0.25, 0.5, 1.25, 0.75, 1.5)  # μ
     end
 
     @testset "Type stability" begin
-        d_float64 = DoublesidedBifurcatedCrystalBall(0.0, 1.0, 0.25, 0.5, 1.25, 0.75, 1.5)
-        d_float32 = DoublesidedBifurcatedCrystalBall(0.0f0, 1.0f0, 0.25f0, 0.5f0, 1.25f0, 0.75f0, 1.5f0)
+        d_float64 = DoubleSidedBifurcatedCrystalBall(0.0, 1.0, 0.25, 0.5, 1.25, 0.75, 1.5)
+        d_float32 = DoubleSidedBifurcatedCrystalBall(0.0f0, 1.0f0, 0.25f0, 0.5f0, 1.25f0, 0.75f0, 1.5f0)
 
         @test pdf(d_float64, 0.0) isa Float64
         @test pdf(d_float32, 0.0f0) isa Float32
@@ -156,8 +156,8 @@ d = DoublesidedBifurcatedCrystalBall(0.0, 1.0, 0.25, 0.5, 1.25, 0.75, 1.5)  # μ
     end
 
     @testset "Support interface" begin
-        d_float64 = DoublesidedBifurcatedCrystalBall(0.0, 1.0, 0.25, 0.5, 1.25, 0.75, 1.5)
-        d_float32 = DoublesidedBifurcatedCrystalBall(0.0f0, 1.0f0, 0.25f0, 0.5f0, 1.25f0, 0.75f0, 1.5f0)
+        d_float64 = DoubleSidedBifurcatedCrystalBall(0.0, 1.0, 0.25, 0.5, 1.25, 0.75, 1.5)
+        d_float32 = DoubleSidedBifurcatedCrystalBall(0.0f0, 1.0f0, 0.25f0, 0.5f0, 1.25f0, 0.75f0, 1.5f0)
 
         @test maximum(d_float64) == Inf
         @test maximum(d_float32) == Inf32

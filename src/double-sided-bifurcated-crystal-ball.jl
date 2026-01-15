@@ -26,7 +26,7 @@ function CrystalBallTail(
 end
 
 """
-    DoublesidedBifurcatedCrystalBall{T<:Real} <: ContinuousUnivariateDistribution
+    DoubleSidedBifurcatedCrystalBall{T<:Real} <: ContinuousUnivariateDistribution
 
 The Double-sided Bifurcated Crystal Ball distribution is a probability distribution commonly used in high-energy physics
 to model various lossy processes. It extends the Bifurcated Gaussian distribution by adding power-law tails on both sides
@@ -61,7 +61,7 @@ using DistributionsHEP
 using Plots
 
 # Create a double-sided bifurcated crystal ball distribution
-d = DoublesidedBifurcatedCrystalBall(0.0, 1.0, 0.25, 0.5, 1.25, 0.75, 1.5)  # μ, σ, ψ, αL, nL, αR, nR
+d = DoubleSidedBifurcatedCrystalBall(0.0, 1.0, 0.25, 0.5, 1.25, 0.75, 1.5)  # μ, σ, ψ, αL, nL, αR, nR
 
 # Evaluate PDF, CDF, and quantile
 pdf(d, 0.0)
@@ -72,13 +72,13 @@ quantile(d, 0.5)
 plot(-5, 5, x->pdf(d, x))
 ```
 """
-struct DoublesidedBifurcatedCrystalBall{T<:Real} <: ContinuousUnivariateDistribution
+struct DoubleSidedBifurcatedCrystalBall{T<:Real} <: ContinuousUnivariateDistribution
     BifGauss::BifurcatedGaussian{T}  # Bifurcated Gaussian core distribution (contains μ, σ, ψ, σL, σR)
     left_tail::CrystalBallTail{T}    # Left tail parameters (G(x0), N, L(x0), x0)
     right_tail::CrystalBallTail{T}   # Right tail parameters (G(x0), N, L(x0), x0)
     norm_const::T  # Normalization constant N
 
-    function DoublesidedBifurcatedCrystalBall(μ::T, σ::T, ψ::T, αL::T, nL::T, αR::T, nR::T) where {T<:Real}
+    function DoubleSidedBifurcatedCrystalBall(μ::T, σ::T, ψ::T, αL::T, nL::T, αR::T, nR::T) where {T<:Real}
         _check_double_sided_bifurcated_crystal_ball_params(σ, αL, nL, αR, nR)
 
         # Calculate kappa
@@ -111,7 +111,7 @@ struct DoublesidedBifurcatedCrystalBall{T<:Real} <: ContinuousUnivariateDistribu
 end
 
 """
-    _compute_transition_cdf_values(d::DoublesidedBifurcatedCrystalBall)
+    _compute_transition_cdf_values(d::DoubleSidedBifurcatedCrystalBall)
 
 Compute the CDF values at the two transition points (left and right) of the Double-sided Bifurcated Crystal Ball distribution.
 
@@ -119,7 +119,7 @@ Returns a tuple `(cdf_at_xL, cdf_at_xR)` where:
 - `cdf_at_xL` is the CDF value at the left transition point (x = μ - αL * σL)
 - `cdf_at_xR` is the CDF value at the right transition point (x = μ + αR * σR)
 """
-function _compute_transition_cdf_values(d::DoublesidedBifurcatedCrystalBall{T}) where {T<:Real}
+function _compute_transition_cdf_values(d::DoubleSidedBifurcatedCrystalBall{T}) where {T<:Real}
     cdf_at_xL = d.norm_const * _integral(d.left_tail, d.left_tail.x0)
     # Integral from xL to xR = cdf(BifGauss, xR) - cdf(BifGauss, xL)
     core_contribution = cdf(d.BifGauss, d.right_tail.x0) - cdf(d.BifGauss, d.left_tail.x0)
@@ -129,12 +129,12 @@ function _compute_transition_cdf_values(d::DoublesidedBifurcatedCrystalBall{T}) 
 end
 
 # Convenience constructors
-DoublesidedBifurcatedCrystalBall(μ::Real, σ::Real, ψ::Real, αL::Real, nL::Real, αR::Real, nR::Real) =
-    DoublesidedBifurcatedCrystalBall(promote(μ, σ, ψ, αL, nL, αR, nR)...)
-DoublesidedBifurcatedCrystalBall(μ::Integer, σ::Integer, ψ::Integer, αL::Integer, nL::Integer, αR::Integer, nR::Integer) =
-    DoublesidedBifurcatedCrystalBall(float(μ), float(σ), float(ψ), float(αL), float(nL), float(αR), float(nR))
+DoubleSidedBifurcatedCrystalBall(μ::Real, σ::Real, ψ::Real, αL::Real, nL::Real, αR::Real, nR::Real) =
+    DoubleSidedBifurcatedCrystalBall(promote(μ, σ, ψ, αL, nL, αR, nR)...)
+DoubleSidedBifurcatedCrystalBall(μ::Integer, σ::Integer, ψ::Integer, αL::Integer, nL::Integer, αR::Integer, nR::Integer) =
+    DoubleSidedBifurcatedCrystalBall(float(μ), float(σ), float(ψ), float(αL), float(nL), float(αR), float(nR))
 
-function Distributions.pdf(d::DoublesidedBifurcatedCrystalBall{T}, x::Real) where {T<:Real}
+function Distributions.pdf(d::DoubleSidedBifurcatedCrystalBall{T}, x::Real) where {T<:Real}
     # Left power-law tail
     if x < d.left_tail.x0
         offset = x - d.left_tail.x0
@@ -149,7 +149,7 @@ function Distributions.pdf(d::DoublesidedBifurcatedCrystalBall{T}, x::Real) wher
     return d.norm_const * _value(d.right_tail, offset)
 end
 
-function Distributions.cdf(d::DoublesidedBifurcatedCrystalBall{T}, x::Real) where {T<:Real}
+function Distributions.cdf(d::DoubleSidedBifurcatedCrystalBall{T}, x::Real) where {T<:Real}
     cdf_at_xL, cdf_at_xR = _compute_transition_cdf_values(d)
 
     if x <= d.left_tail.x0
@@ -171,7 +171,7 @@ function Distributions.cdf(d::DoublesidedBifurcatedCrystalBall{T}, x::Real) wher
     end
 end
 
-function Distributions.quantile(d::DoublesidedBifurcatedCrystalBall{T}, p::Real) where {T<:Real}
+function Distributions.quantile(d::DoubleSidedBifurcatedCrystalBall{T}, p::Real) where {T<:Real}
     if p < zero(T) || p > one(T)
         throw(DomainError(p, "Probability p must be in [0,1]."))
     end
@@ -200,15 +200,15 @@ function Distributions.quantile(d::DoublesidedBifurcatedCrystalBall{T}, p::Real)
     end
 end
 
-Distributions.maximum(d::DoublesidedBifurcatedCrystalBall{T}) where {T<:Real} = T(Inf)
-Distributions.minimum(d::DoublesidedBifurcatedCrystalBall{T}) where {T<:Real} = T(-Inf)
+Distributions.maximum(d::DoubleSidedBifurcatedCrystalBall{T}) where {T<:Real} = T(Inf)
+Distributions.minimum(d::DoubleSidedBifurcatedCrystalBall{T}) where {T<:Real} = T(-Inf)
 
 # Distributions.jl interface methods
-Distributions.location(d::DoublesidedBifurcatedCrystalBall) = d.BifGauss.μ
-Distributions.scale(d::DoublesidedBifurcatedCrystalBall) = d.BifGauss.σ
+Distributions.location(d::DoubleSidedBifurcatedCrystalBall) = d.BifGauss.μ
+Distributions.scale(d::DoubleSidedBifurcatedCrystalBall) = d.BifGauss.σ
 # Compute αL, nL, αR, nR from tail structs when needed for params()
 # For bifurcated: x0L = μ - αL*σL, x0R = μ + αR*σR, and N = sqrt(1 + n²) → n = sqrt(N² - 1)
-Distributions.params(d::DoublesidedBifurcatedCrystalBall) = (
+Distributions.params(d::DoubleSidedBifurcatedCrystalBall) = (
     d.BifGauss.μ,
     d.BifGauss.σ,
     d.BifGauss.ψ,
@@ -217,4 +217,4 @@ Distributions.params(d::DoublesidedBifurcatedCrystalBall) = (
     (d.right_tail.x0 - d.BifGauss.μ) / d.BifGauss.σR,  # αR = (x0R - μ) / σR
     sqrt(d.right_tail.N^2 - 1)                         # nR = sqrt(N² - 1)
 )
-Distributions.partype(::DoublesidedBifurcatedCrystalBall{T}) where {T} = T
+Distributions.partype(::DoubleSidedBifurcatedCrystalBall{T}) where {T} = T
