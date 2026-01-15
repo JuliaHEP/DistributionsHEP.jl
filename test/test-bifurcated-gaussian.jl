@@ -4,18 +4,6 @@ using Distributions
 using QuadGK
 using Test
 
-# Helper to check quantile accuracy for different σ values
-function check_quantile_accuracy(d, ps; atol=1e-8)
-    for p in ps
-        q = quantile(d, p)
-        cdf_val = cdf(d, q)
-        @test isapprox(cdf_val, p; atol=atol)
-        if !isapprox(cdf_val, p; atol=atol)
-            @warn "Quantile test failed" p q cdf_val
-        end
-    end
-end
-
 # Test distribution with σ = 1 (standard case)
 d = BifurcatedGaussian(0.0, 1.0, 0.5)  # μ, σ, ψ
 
@@ -98,7 +86,11 @@ d = BifurcatedGaussian(0.0, 1.0, 0.5)  # μ, σ, ψ
             d_test = BifurcatedGaussian(μ, σ, ψ)
 
             # Test quantile accuracy
-            check_quantile_accuracy(d_test, ps)
+            for p in ps
+                q = quantile(d_test, p)
+                cdf_val = cdf(d_test, q)
+                @test isapprox(cdf_val, p; atol=1e-8)
+            end
 
             # Test CDF normalization (should approach 1 for large x)
             cdf_large = cdf(d_test, 1000)
