@@ -131,8 +131,6 @@ end
 # Convenience constructors
 DoubleSidedBifurcatedCrystalBall(μ::Real, σ::Real, ψ::Real, αL::Real, nL::Real, αR::Real, nR::Real) =
     DoubleSidedBifurcatedCrystalBall(promote(μ, σ, ψ, αL, nL, αR, nR)...)
-DoubleSidedBifurcatedCrystalBall(μ::Integer, σ::Integer, ψ::Integer, αL::Integer, nL::Integer, αR::Integer, nR::Integer) =
-    DoubleSidedBifurcatedCrystalBall(float(μ), float(σ), float(ψ), float(αL), float(nL), float(αR), float(nR))
 
 function Distributions.pdf(d::DoubleSidedBifurcatedCrystalBall{T}, x::Real) where {T<:Real}
     # Left power-law tail
