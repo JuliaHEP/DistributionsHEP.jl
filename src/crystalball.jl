@@ -162,9 +162,9 @@ It switches between the Gaussian core and the power-law tail based on the value 
 function Distributions.pdf(d::CrystalBall{T}, x::Real) where {T<:Real}
     x > d.tail.x0 && return d.norm_const * _value(d.gauss, x)
 
-    x̂ = _scaled_coord(d.gauss, x)
-    x̂0 = _scaled_coord(d.gauss, d.tail.x0)  # = -α
-    return d.norm_const * _value(d.tail, x̂ - x̂0)
+    # Tail part: _value expects absolute offset (x - x0), not scaled
+    offset = x - d.tail.x0
+    return d.norm_const * _value(d.tail, offset)
 end
 
 """

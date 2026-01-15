@@ -11,7 +11,10 @@ using Test
         for p in ps
             q = quantile(d, p)
             cdf_val = cdf(d, q)
-            @test isapprox(cdf_val, p; atol=atol) || @warn "Quantile test failed" p q cdf_val
+            if !isapprox(cdf_val, p; atol=atol)
+                @warn "Quantile test failed" p q cdf_val
+            end
+            @test isapprox(cdf_val, p; atol=atol)
         end
     end
 
@@ -99,8 +102,10 @@ using Test
             # Test PDF normalization via numerical integration
             # The PDF should integrate to 1 for all σ values
             numerical_integral = quadgk(x -> pdf(d_test, x), -Inf, Inf)[1]
-            @test isapprox(numerical_integral, 1.0; atol=1e-6) ||
-                  @warn "PDF normalization failed for σ = $σ" numerical_integral
+            if !isapprox(numerical_integral, 1.0; atol=1e-6)
+                @warn "PDF normalization failed for σ = $σ" numerical_integral
+            end
+            @test isapprox(numerical_integral, 1.0; atol=1e-6)
         end
     end
 

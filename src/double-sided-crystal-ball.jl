@@ -94,19 +94,18 @@ end
 
 
 function Distributions.pdf(d::DoubleCrystalBall{T}, x::Real) where {T<:Real}
-    x̂ = _scaled_coord(d.gauss, x)
-    # Left power-law tail: using clean 4-parameter formulation (in scaled coordinates)
+    # Left power-law tail: _value expects absolute offset (x - x0)
     if x < d.left_tail.x0
-        x̂0L = _scaled_coord(d.gauss, d.left_tail.x0)  # = -αL
-        return d.norm_const * _value(d.left_tail, x̂ - x̂0L)
+        offset = x - d.left_tail.x0
+        return d.norm_const * _value(d.left_tail, offset)
     end
     # Gaussian core
     if x <= d.right_tail.x0
         return d.norm_const * _value(d.gauss, x)
     end
-    # Right power-law tail: using clean 4-parameter formulation (in scaled coordinates)
-    x̂0R = _scaled_coord(d.gauss, d.right_tail.x0)  # = αR
-    return d.norm_const * _value(d.right_tail, x̂ - x̂0R)
+    # Right power-law tail: _value expects absolute offset (x - x0)
+    offset = x - d.right_tail.x0
+    return d.norm_const * _value(d.right_tail, offset)
 end
 
 function Distributions.cdf(d::DoubleCrystalBall{T}, x::Real) where {T<:Real}
