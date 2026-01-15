@@ -94,57 +94,6 @@ function _integral_inversion(g::UnNormGauss{T}, integral::Real) where {T<:Real}
     return a
 end
 
-"""
-    _gaussian_norm_const(::Type{T})
-
-Return the Gaussian normalization constant: `sqrt(π/2)` for type `T`.
-"""
-_gaussian_norm_const(::Type{T}) where {T<:Real} = sqrt(T(π) / T(2))
-
-"""
-    _erf_scaled(g::UnNormGauss, x̂::Real)
-
-Compute `erf(x̂ / sqrt(2))` for scaled coordinate `x̂`.
-
-Note: This function is kept for compatibility with other distributions (e.g., DoubleCrystalBall).
-New code should use `_integral` and `_integral_inversion` instead.
-"""
-function _erf_scaled(g::UnNormGauss{T}, x̂::Real) where {T<:Real}
-    x̂_T = T(x̂)
-    return erf(x̂_T / sqrt(T(2)))
-end
-
-"""
-    _gaussian_cdf_integral(g::UnNormGauss, x̂1::Real, x̂0::Real)
-
-Compute the Gaussian CDF integral from scaled coordinate `x̂0` to `x̂1`:
-`sqrt(π/2) * (erf(x̂1/sqrt(2)) - erf(x̂0/sqrt(2)))`
-
-Note: This function is kept for compatibility with other distributions (e.g., DoubleCrystalBall).
-New code should use `_integral` instead.
-"""
-function _gaussian_cdf_integral(g::UnNormGauss{T}, x̂1::Real, x̂0::Real) where {T<:Real}
-    x̂1_T = T(x̂1)
-    x̂0_T = T(x̂0)
-    return _gaussian_norm_const(T) * (_erf_scaled(g, x̂1_T) - _erf_scaled(g, x̂0_T))
-end
-
-"""
-    _gaussian_quantile(g::UnNormGauss, arg_erfinv::Real)
-
-Compute the quantile from the argument to `erfinv`:
-Converts `arg_erfinv` to scaled coordinate `x̂ = sqrt(2) * erfinv(arg_erfinv)`,
-then returns the absolute coordinate.
-
-Note: This function is kept for compatibility with other distributions (e.g., DoubleCrystalBall).
-New code should use `_integral_inversion` instead.
-"""
-function _gaussian_quantile(g::UnNormGauss{T}, arg_erfinv::Real) where {T<:Real}
-    arg_erfinv_T = T(arg_erfinv)
-    x̂ = sqrt(T(2)) * erfinv(arg_erfinv_T)
-    return _from_scaled_coord(g, x̂)
-end
-
 function _compute_standard_tail_constants(μ::T, σ::T, α::T, n::T) where {T<:Real}
     x0 = μ - α * σ
     G_x0 = exp(-α^2 / 2)
@@ -291,3 +240,64 @@ Distributions.minimum(d::CrystalBall{T}) where {T<:Real} = T(-Inf)
 # Distributions.jl interface methods
 Distributions.location(d::CrystalBall) = d.gauss.μ
 Distributions.scale(d::CrystalBall) = d.gauss.σ
+
+
+
+
+
+
+
+
+#  to be removed once the refactoring is complete
+
+
+"""
+    _gaussian_norm_const(::Type{T})
+
+Return the Gaussian normalization constant: `sqrt(π/2)` for type `T`.
+"""
+_gaussian_norm_const(::Type{T}) where {T<:Real} = sqrt(T(π) / T(2))
+
+"""
+    _erf_scaled(g::UnNormGauss, x̂::Real)
+
+Compute `erf(x̂ / sqrt(2))` for scaled coordinate `x̂`.
+
+Note: This function is kept for compatibility with other distributions (e.g., DoubleCrystalBall).
+New code should use `_integral` and `_integral_inversion` instead.
+"""
+function _erf_scaled(g::UnNormGauss{T}, x̂::Real) where {T<:Real}
+    x̂_T = T(x̂)
+    return erf(x̂_T / sqrt(T(2)))
+end
+
+"""
+    _gaussian_cdf_integral(g::UnNormGauss, x̂1::Real, x̂0::Real)
+
+Compute the Gaussian CDF integral from scaled coordinate `x̂0` to `x̂1`:
+`sqrt(π/2) * (erf(x̂1/sqrt(2)) - erf(x̂0/sqrt(2)))`
+
+Note: This function is kept for compatibility with other distributions (e.g., DoubleCrystalBall).
+New code should use `_integral` instead.
+"""
+function _gaussian_cdf_integral(g::UnNormGauss{T}, x̂1::Real, x̂0::Real) where {T<:Real}
+    x̂1_T = T(x̂1)
+    x̂0_T = T(x̂0)
+    return _gaussian_norm_const(T) * (_erf_scaled(g, x̂1_T) - _erf_scaled(g, x̂0_T))
+end
+
+"""
+    _gaussian_quantile(g::UnNormGauss, arg_erfinv::Real)
+
+Compute the quantile from the argument to `erfinv`:
+Converts `arg_erfinv` to scaled coordinate `x̂ = sqrt(2) * erfinv(arg_erfinv)`,
+then returns the absolute coordinate.
+
+Note: This function is kept for compatibility with other distributions (e.g., DoubleCrystalBall).
+New code should use `_integral_inversion` instead.
+"""
+function _gaussian_quantile(g::UnNormGauss{T}, arg_erfinv::Real) where {T<:Real}
+    arg_erfinv_T = T(arg_erfinv)
+    x̂ = sqrt(T(2)) * erfinv(arg_erfinv_T)
+    return _from_scaled_coord(g, x̂)
+end
