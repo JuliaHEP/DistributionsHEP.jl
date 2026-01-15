@@ -20,6 +20,7 @@ export ArgusBG
 include("argusBG.jl")
 
 export CrystalBall
+include("crystal-ball-tail.jl")
 include("crystalball.jl")
 
 export DoubleCrystalBall
@@ -30,5 +31,8 @@ include("secant.jl")
 
 export BifurcatedGaussian
 include("bifurcated-gaussian.jl")
+
+export DoubleSidedBifurcatedCrystalBall
+include("double-sided-bifurcated-crystal-ball.jl")
 
 end

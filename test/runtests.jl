@@ -7,4 +7,5 @@ using Test
     include("test-double-sided-crystal-ball.jl")
     include("test-secant.jl")
     include("test-bifurcated-gaussian.jl")
+    include("test-double-sided-bifurcated-crystal-ball.jl")
 end

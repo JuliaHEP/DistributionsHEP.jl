@@ -1,5 +1,8 @@
+# Note: CrystalBallTail and helper functions are defined in crystalball.jl
+# They are available here since crystalball.jl is included before this file in DistributionsHEP.jl
+
 # Common parameter validation for two-sided crystal ball
-function _check_double_crystalball_params(σ::T, αL::T, nL::T, αR::T, nR::T) where {T <: Real}
+function _check_double_crystalball_params(σ::T, αL::T, nL::T, αR::T, nR::T) where {T<:Real}
     σ > zero(T) || error("σ (scale) must be positive.")
     αL > zero(T) || error("αL (left transition point) must be positive.")
     nL > one(T) || error("nL (left power-law exponent) must be greater than 1.")
@@ -25,156 +28,164 @@ where ``\\hat{x} = (x - μ) / σ``.
 The parameters A_L, B_L, A_R, B_R are derived from α_L, n_L, α_R, n_R to ensure continuity 
 of the function and its first derivative. N is a normalization constant.
 
+This implementation defines the Double Crystal Ball function with power-law tails on both the left and right sides of the Gaussian peak.
+
 # Arguments
 - `μ`: The mean of the Gaussian core.
 - `σ`: The standard deviation of the Gaussian core. Must be positive.
-- `αL`: The left transition point, defining where the left power-law tail begins.
-- `nL`: The exponent of the left power-law tail. Must be greater than 1.
-- `αR`: The right transition point, defining where the right power-law tail begins.
-- `nR`: The exponent of the right power-law tail. Must be greater than 1.
+- `αL`: The left transition point, defining where the left power-law tail begins. It is a positive value representing the number of standard deviations (σ) from the mean (μ) to the left transition point.
+- `nL`: The exponent of the left power-law tail. Must be greater than 1 for the distribution to be normalizable.
+- `αR`: The right transition point, defining where the right power-law tail begins. It is a positive value representing the number of standard deviations (σ) from the mean (μ) to the right transition point.
+- `nR`: The exponent of the right power-law tail. Must be greater than 1 for the distribution to be normalizable.
+
+The struct also stores precomputed constants `norm_const` (N) and tail parameters for efficient PDF and CDF calculations. These are not direct user inputs but are derived from the primary parameters.
 
 # Example
-```julia
+````julia
 using DistributionsHEP
 using Plots
 
 d = DoubleCrystalBall(0.0, 1.0, 1.5, 2.0, 2.0, 3.0)  # μ, σ, αL, nL, αR, nR
 plot(-5, 5, x->pdf(d, x))
-```
+````
 """
-struct DoubleCrystalBall{T <: Real} <: ContinuousUnivariateDistribution
-    μ::T
-    σ::T
-    αL::T
-    nL::T
-    αR::T
-    nR::T
-    # Precomputed constants for PDF calculation
-    norm_const::T  # Normalization constant N
-    AL_const::T    # Left tail parameter A_L
-    BL_const::T    # Left tail parameter B_L
-    AR_const::T    # Right tail parameter A_R
-    BR_const::T    # Right tail parameter B_R
+struct DoubleCrystalBall{T<:Real} <: ContinuousUnivariateDistribution
+    left_tail::CrystalBallTail{T}
+    right_tail::CrystalBallTail{T}
+    gauss::Normal{T}          # Normal distribution helper
+    norm_const::T
 
-    function DoubleCrystalBall(μ::T, σ::T, αL::T, nL::T, αR::T, nR::T) where {T <: Real}
+    function DoubleCrystalBall(μ::T, σ::T, αL::T, nL::T, αR::T, nR::T) where {T<:Real}
         _check_double_crystalball_params(σ, αL, nL, αR, nR)
 
-        # Calculate constants for left tail
-        CL = nL / αL / (nL - 1) * exp(-αL^2 / 2)
-        AL = (nL / αL)^nL * exp(-αL^2 / 2)
-        BL = nL / αL - αL
+        gauss = Normal(μ, σ)
 
-        # Calculate constants for right tail
-        CR = nR / αR / (nR - 1) * exp(-αR^2 / 2)
-        AR = (nR / αR)^nR * exp(-αR^2 / 2)
-        BR = nR / αR - αR
+        x0L = μ - αL * σ
+        # Use pdf from Normal to get normalized G_x0 at transition point
+        G_x0L = pdf(gauss, x0L)
+        L_x0L = αL # log derivative is just equal to αL
+        left_tail = CrystalBallTail(G_x0L, nL, L_x0L, x0L)
 
-        # Calculate normalization constant
-        # The normalization should be: N = 1 / (CL + CR + D_val)
-        # where CL, CR are the tail contributions and D_val is the Gaussian core contribution
-        D_val = sqrt(T(π) / 2) * (erf(αR / sqrt(T(2))) + erf(αL / sqrt(T(2))))
-        N = one(T) / (CL + CR + D_val)
+        x0R = μ + αR * σ
+        # Use pdf from Normal to get normalized G_x0 at transition point
+        G_x0R = pdf(gauss, x0R)
+        L_x0R = -αR  # Negative as should be for rightward tail
+        right_tail = CrystalBallTail(G_x0R, nR, L_x0R, x0R)
 
-        new{T}(μ, σ, αL, nL, αR, nR, N, AL, BL, AR, BR)
+        left_tail_contribution = _integral(left_tail, left_tail.x0)
+        right_tail_contribution = -_integral(right_tail, right_tail.x0)  # Right tail has negative L_x0, so negate
+        # Integral from x0L to x0R = integral from -∞ to x0R - integral from -∞ to x0L
+        integral_to_x0R = cdf(gauss, right_tail.x0)
+        integral_to_x0L = cdf(gauss, left_tail.x0)
+        core_contribution = integral_to_x0R - integral_to_x0L
+        N = one(T) / (left_tail_contribution + right_tail_contribution + core_contribution)
+
+        new{T}(left_tail, right_tail, gauss, N)
     end
 end
 
-# Helper function to compute CDF values at transition points
-function _compute_transition_cdf_values(d::DoubleCrystalBall{T}) where {T <: Real}
-    # CDF values at transition points (from mathematical derivation)
-    cdf_at_minus_alphaL = d.norm_const * d.nL / d.αL / (d.nL - 1) * exp(-d.αL^2 / 2)
-    cdf_at_plus_alphaR =
-        cdf_at_minus_alphaL +
-        d.norm_const *
-        sqrt(T(π) / 2) *
-        (erf(d.αR / sqrt(T(2))) + erf(d.αL / sqrt(T(2))))
+"""
+    _compute_transition_cdf_values(d::DoubleCrystalBall)
+
+Compute the CDF values at the two transition points (left and right) of the Double Crystal Ball distribution.
+
+Returns a tuple `(cdf_at_minus_alphaL, cdf_at_plus_alphaR)` where:
+- `cdf_at_minus_alphaL` is the CDF value at the left transition point (x = μ - αL * σ)
+- `cdf_at_plus_alphaR` is the CDF value at the right transition point (x = μ + αR * σ)
+"""
+function _compute_transition_cdf_values(d::DoubleCrystalBall{T}) where {T<:Real}
+    cdf_at_minus_alphaL = d.norm_const * _integral(d.left_tail, d.left_tail.x0)
+    # Integral from x0L to x0R = integral from -∞ to x0R - integral from -∞ to x0L
+    integral_to_x0R = cdf(d.gauss, d.right_tail.x0)
+    integral_to_x0L = cdf(d.gauss, d.left_tail.x0)
+    cdf_at_plus_alphaR = cdf_at_minus_alphaL + d.norm_const * (integral_to_x0R - integral_to_x0L)
 
     return cdf_at_minus_alphaL, cdf_at_plus_alphaR
 end
 
 
-function Distributions.pdf(d::DoubleCrystalBall{T}, x::Real) where {T <: Real}
-    x̂ = (x - d.μ) / d.σ
+function Distributions.pdf(d::DoubleCrystalBall{T}, x::Real) where {T<:Real}
     # Left power-law tail
-    x̂ < -d.αL && return d.norm_const * d.AL_const * (d.BL_const - x̂)^(-d.nL) / d.σ
+    if x < d.left_tail.x0
+        offset = x - d.left_tail.x0
+        return d.norm_const * _value(d.left_tail, offset)
+    end
     # Gaussian core
-    x̂ < d.αR && return d.norm_const * exp(-x̂^2 / 2) / d.σ
+    if x <= d.right_tail.x0
+        return d.norm_const * pdf(d.gauss, x)
+    end
     # Right power-law tail
-    return d.norm_const * d.AR_const * (d.BR_const + x̂)^(-d.nR) / d.σ
+    offset = x - d.right_tail.x0
+    return d.norm_const * _value(d.right_tail, offset)
 end
 
-function Distributions.cdf(d::DoubleCrystalBall{T}, x::Real) where {T <: Real}
-    x̂ = (x - d.μ) / d.σ
-
-    # CDF values at transition points (from mathematical derivation)
+function Distributions.cdf(d::DoubleCrystalBall{T}, x::Real) where {T<:Real}
     cdf_at_minus_alphaL, cdf_at_plus_alphaR = _compute_transition_cdf_values(d)
 
-    if x̂ <= -d.αL
-        # CDF for the left power-law tail (x̂ ≤ -αL)
-        # The integral is: ∫_{-∞}^{x̂} N * A_L * (B_L - t)^(-n_L) / σ dt
-        # = N * A_L / (n_L - 1) * (B_L - x̂)^(1 - n_L)
-        return d.norm_const * d.AL_const / (d.nL - 1) * (d.BL_const - x̂)^(1 - d.nL)
-    elseif x̂ >= d.αR
-        # CDF for the right power-law tail (x̂ ≥ αR)
-        # CDF at αR + integral of right tail from αR to x̂
-        # The integral should be: ∫_{αR}^{x̂} N * A_R * (B_R + t)^(-n_R) dt
-        # = N * A_R / (n_R - 1) * ((B_R + αR)^(1-n_R) - (B_R + x̂)^(1-n_R))
-        # The integral is: ∫_{αR}^{x̂} N * A_R * (B_R + t)^(-n_R) / σ dt
-        # = N * A_R / (n_R - 1) * ((B_R + αR)^(1 - n_R) - (B_R + x̂)^(1 - n_R))
-        tail_integral =
-            d.norm_const * d.AR_const / (d.nR - 1) *
-            ((d.BR_const + d.αR)^(1 - d.nR) - (d.BR_const + x̂)^(1 - d.nR))
-        return cdf_at_plus_alphaR + tail_integral
+    if x <= d.left_tail.x0
+        # Left power-law tail
+        return d.norm_const * _integral(d.left_tail, x)
+    elseif x >= d.right_tail.x0
+        # Right power-law tail
+        # For right tail, _integral(right_tail, x) = -∫[x, +∞] and _integral(right_tail, x0R) = -∫[x0R, +∞]
+        # CDF(x) = CDF(x0R) + ∫[x0R, x] = CDF(x0R) + (∫[x0R, +∞] - ∫[x, +∞])
+        # = CDF(x0R) + (_integral(right_tail, x) - _integral(right_tail, x0R))
+        integral_at_x = _integral(d.right_tail, x)
+        integral_at_x0R = _integral(d.right_tail, d.right_tail.x0)
+        return cdf_at_plus_alphaR + d.norm_const * (integral_at_x - integral_at_x0R)
     else
-        # CDF for the Gaussian core (-αL < x̂ < αR)
-        # CDF at -αL + integral of Gaussian PDF from -αL to x̂
-        # The integral is: ∫_{-αL}^{x̂} N * exp(-t^2/2) / σ dt = N * sqrt(π/2) * (erf(x̂/sqrt(2)) + erf(αL/sqrt(2)))
-        integral_gaussian_part =
-            sqrt(T(π) / 2) * (erf(x̂ / sqrt(T(2))) + erf(d.αL / sqrt(T(2))))
+        # Gaussian core
+        # Integral from x0L to x = integral from -∞ to x - integral from -∞ to x0L
+        integral_to_x = cdf(d.gauss, x)
+        integral_to_x0L = cdf(d.gauss, d.left_tail.x0)
+        integral_gaussian_part = integral_to_x - integral_to_x0L
         return cdf_at_minus_alphaL + d.norm_const * integral_gaussian_part
     end
 end
 
 
-function Distributions.quantile(d::DoubleCrystalBall{T}, p::Real) where {T <: Real}
+function Distributions.quantile(d::DoubleCrystalBall{T}, p::Real) where {T<:Real}
     if p < zero(T) || p > one(T)
         throw(DomainError(p, "Probability p must be in [0,1]."))
     end
     p == zero(T) && return T(-Inf)
     p == one(T) && return T(Inf)
 
-    # CDF values at transition points (same as in CDF function)
     cdf_at_minus_alphaL, cdf_at_plus_alphaR = _compute_transition_cdf_values(d)
 
-    x̂ = zero(T) # Scaled quantile score
-
     if p <= cdf_at_minus_alphaL
-        # Quantile is in the left power-law tail
-        base = (p * (d.nL - 1)) / (d.norm_const * d.AL_const)
-        x̂ = d.BL_const - base^(one(T) / (one(T) - d.nL))
+        # Left power-law tail
+        tail_integral = p / d.norm_const
+        return _integral_inversion(d.left_tail, tail_integral)
     elseif p >= cdf_at_plus_alphaR
-        # Quantile is in the right power-law tail
-        # Solve: p = cdf_at_plus_alphaR + tail_integral
-        # where tail_integral = norm_const * AR_const / (nR - 1) * ((BR_const + αR)^(1 - nR) - (BR_const + x̂)^(1 - nR))
-        base =
-            (d.BR_const + d.αR)^(1 - d.nR) -
-            (p - cdf_at_plus_alphaR) * (d.nR - 1) / (d.norm_const * d.AR_const)
-        x̂ = base^(one(T) / (one(T) - d.nR)) - d.BR_const
+        # Right power-law tail
+        # For right tail: CDF(x) = CDF(x0R) + N * (_integral(right_tail, x) - _integral(right_tail, x0R))
+        # So: _integral(right_tail, x) = (p - cdf_at_plus_alphaR) / N + _integral(right_tail, x0R)
+        integral_at_x0R = _integral(d.right_tail, d.right_tail.x0)
+        tail_integral = (p - cdf_at_plus_alphaR) / d.norm_const + integral_at_x0R
+        return _integral_inversion(d.right_tail, tail_integral)
     else
-        # Quantile is in the Gaussian core
-        # Solve: p = cdf_at_minus_alphaL + N * sqrt(π/2) * (erf(x̂/sqrt(2)) + erf(αL/sqrt(2)))
-        # Rearranging: erf(x̂/sqrt(2)) = (p - cdf_at_minus_alphaL) / (N * sqrt(π/2)) - erf(αL/sqrt(2))
-        term_for_erfinv_num = (p - cdf_at_minus_alphaL)
-        term_for_erfinv_den = d.norm_const * sqrt(T(π) / T(2))
-
-        erf_alphaL_sqrt2 = erf(d.αL / sqrt(T(2)))
-        arg_erfinv = (term_for_erfinv_num / term_for_erfinv_den) - erf_alphaL_sqrt2
-
-        x̂ = sqrt(T(2)) * erfinv(arg_erfinv)
+        # Gaussian core
+        # p = cdf_at_minus_alphaL + N * (integral from x0L to x)
+        # So: integral from -∞ to x = (p - cdf_at_minus_alphaL) / N + integral from -∞ to x0L
+        gaussian_integral_at_x0L = cdf(d.gauss, d.left_tail.x0)
+        gaussian_integral = (p - cdf_at_minus_alphaL) / d.norm_const + gaussian_integral_at_x0L
+        return quantile(d.gauss, gaussian_integral)
     end
-
-    return d.μ + d.σ * x̂
 end
 
-Distributions.maximum(d::DoubleCrystalBall{T}) where {T <: Real} = T(Inf)
-Distributions.minimum(d::DoubleCrystalBall{T}) where {T <: Real} = T(-Inf)
+Distributions.maximum(d::DoubleCrystalBall{T}) where {T<:Real} = T(Inf)
+Distributions.minimum(d::DoubleCrystalBall{T}) where {T<:Real} = T(-Inf)
+
+# Distributions.jl interface methods
+Distributions.location(d::DoubleCrystalBall) = d.gauss.μ
+Distributions.scale(d::DoubleCrystalBall) = d.gauss.σ
+Distributions.params(d::DoubleCrystalBall) = (
+    d.gauss.μ,
+    d.gauss.σ,
+    d.left_tail.L_x0,
+    d.left_tail.N,
+    -d.right_tail.L_x0,  # Negative as should be for rightward tail
+    d.right_tail.N
+)
+Distributions.partype(::DoubleCrystalBall{T}) where {T} = T
