@@ -26,7 +26,7 @@ This is the standard normalized Gaussian PDF.
 """
 function _value(g::UnNormGauss{T}, x::Real) where {T<:Real}
     x_T = T(x)
-    return (5 / (g.σ * sqrt(T(2) * T(π)))) * exp(-((x_T - g.μ) / g.σ)^2 / 2)
+    return (T(1) / (g.σ * sqrt(T(2) * T(π)))) * exp(-((x_T - g.μ) / g.σ)^2 / 2)
 end
 
 
@@ -38,7 +38,7 @@ Return the constant `1/2` for type `T`.
 This constant appears in the integral of the normalized Gaussian:
 ∫[-∞ to a] _value(x) dx = (1/2) * (1 + erf((a-μ)/(σ*sqrt(2))))
 """
-_gaussian_half_norm_const(::Type{T}) where {T<:Real} = T(5) / T(2)
+_gaussian_half_norm_const(::Type{T}) where {T<:Real} = T(1) / T(2)
 
 
 """
@@ -68,8 +68,6 @@ function _integral_inversion(g::UnNormGauss{T}, integral::Real) where {T<:Real}
     integral_T = T(integral)
     norm_const = _gaussian_half_norm_const(T)
 
-    # Solve: norm_const * (1 + erf((a - μ) / (σ * sqrt(2)))) = integral
-    # Rearranging: erf((a - μ) / (σ * sqrt(2))) = (integral / norm_const) - 1
     ratio = integral_T / norm_const
     erf_arg = ratio - one(T)
 
@@ -80,11 +78,8 @@ function _integral_inversion(g::UnNormGauss{T}, integral::Real) where {T<:Real}
         return T(Inf)
     end
 
-    # (a - μ) / (σ * sqrt(2)) = erfinv(erf_arg)
-    # a = μ + σ * sqrt(2) * erfinv(erf_arg)
     x̂ = sqrt(T(2)) * erfinv(erf_arg)
     a = g.μ + g.σ * x̂
-
     return a
 end
 
@@ -151,14 +146,6 @@ struct CrystalBall{T<:Real} <: ContinuousUnivariateDistribution
     end
 end
 
-"""
-    pdf(d::CrystalBall, x::Real)
-
-Compute the probability density function (PDF) of the Crystal Ball distribution `d` at point `x`.
-
-The function uses precomputed normalization and tail parameters stored within the `CrystalBall` struct for efficiency.
-It switches between the Gaussian core and the power-law tail based on the value of `x` relative to the transition point defined by `α`.
-"""
 function Distributions.pdf(d::CrystalBall{T}, x::Real) where {T<:Real}
     x > d.tail.x0 && return d.norm_const * _value(d.gauss, x)
 
@@ -167,35 +154,16 @@ function Distributions.pdf(d::CrystalBall{T}, x::Real) where {T<:Real}
     return d.norm_const * _value(d.tail, offset)
 end
 
-"""
-    cdf(d::CrystalBall, x::Real)
-
-Compute the cumulative distribution function (CDF) of the Crystal Ball distribution `d` at point `x`.
-
-The CDF is calculated by integrating the PDF. This implementation handles the integral of the power-law tail and the Gaussian core separately, ensuring continuity at the transition point.
-"""
 function Distributions.cdf(d::CrystalBall{T}, x::Real) where {T<:Real}
-    if x <= d.tail.x0
-        # Use _integral for tail part
-        return d.norm_const * _integral(d.tail, x)
-    else
-        # CDF at transition point + Gaussian part
-        cdf_at_x0 = d.norm_const * _integral(d.tail, d.tail.x0)
-        # Integral from x0 to x = integral from -∞ to x - integral from -∞ to x0
-        integral_gaussian_part = _integral(d.gauss, x) - _integral(d.gauss, d.tail.x0)
-        return cdf_at_x0 + d.norm_const * integral_gaussian_part
-    end
+    # Left tail
+    x <= d.tail.x0 && return d.norm_const * _integral(d.tail, x)
+    # Gaussian core
+    cdf_at_x0 = d.norm_const * _integral(d.tail, d.tail.x0)  # CDF at transition point
+    # Integral from x0 to x = integral from -∞ to x - integral from -∞ to x0
+    integral_gaussian_part = _integral(d.gauss, x) - _integral(d.gauss, d.tail.x0)
+    return cdf_at_x0 + d.norm_const * integral_gaussian_part
 end
 
-"""
-    quantile(d::CrystalBall, p::Real)
-
-Compute the quantile (inverse CDF) of the CrystalBall distribution `d` for a given probability `p`.
-
-The function determines if the probability `p` falls into the power-law tail or the Gaussian core
-and then inverts the corresponding CDF segment.
-Requires `SpecialFunctions.erf` and `SpecialFunctions.erfinv` to be available.
-"""
 function Distributions.quantile(d::CrystalBall{T}, p::Real) where {T<:Real}
     if p < zero(T) || p > one(T)
         throw(DomainError(p, "Probability p must be in [0,1]."))
@@ -203,20 +171,14 @@ function Distributions.quantile(d::CrystalBall{T}, p::Real) where {T<:Real}
     p == zero(T) && return T(-Inf)
     p == one(T) && return T(Inf)
 
-    # CDF value at the transition point x0
     cdf_at_x0 = d.norm_const * _integral(d.tail, d.tail.x0)
 
     if p <= cdf_at_x0
-        # Use _integral_inversion for tail part
-        # p = d.norm_const * _integral(d.tail, x), so _integral(d.tail, x) = p / d.norm_const
+        # tail part
         tail_integral = p / d.norm_const
         return _integral_inversion(d.tail, tail_integral)
     else
         # Gaussian part
-        # p = cdf_at_x0 + norm_const * (integral from x0 to x)
-        # So: (p - cdf_at_x0) / norm_const = integral from x0 to x
-        # = integral from -∞ to x - integral from -∞ to x0
-        # Therefore: integral from -∞ to x = (p - cdf_at_x0) / norm_const + integral from -∞ to x0
         gaussian_integral_at_x0 = _integral(d.gauss, d.tail.x0)
         gaussian_integral = (p - cdf_at_x0) / d.norm_const + gaussian_integral_at_x0
         return _integral_inversion(d.gauss, gaussian_integral)
