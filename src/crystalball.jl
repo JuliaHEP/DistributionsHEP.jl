@@ -23,7 +23,8 @@ Compute the unnormalized Gaussian value at point `x`:
 `exp(-((x - g.μ) / g.σ)^2 / 2)`
 """
 function _value(g::UnNormGauss{T}, x::Real) where {T<:Real}
-    return exp(-((x - g.μ) / g.σ)^2 / 2)
+    x_T = T(x)
+    return exp(-((x_T - g.μ) / g.σ)^2 / 2)
 end
 
 """
@@ -32,7 +33,8 @@ end
 Convert absolute coordinate `x` to scaled coordinate: `(x - g.μ) / g.σ`
 """
 function _scaled_coord(g::UnNormGauss{T}, x::Real) where {T<:Real}
-    return (x - g.μ) / g.σ
+    x_T = T(x)
+    return (x_T - g.μ) / g.σ
 end
 
 """
@@ -41,16 +43,75 @@ end
 Convert scaled coordinate `x̂` back to absolute coordinate: `g.μ + g.σ * x̂`
 """
 function _from_scaled_coord(g::UnNormGauss{T}, x̂::Real) where {T<:Real}
-    return g.μ + g.σ * x̂
+    x̂_T = T(x̂)
+    return g.μ + g.σ * x̂_T
 end
+
+"""
+    _integral(g::UnNormGauss, a)
+
+Compute the integral of the unnormalized Gaussian function from -∞ to `a` (in absolute coordinates).
+
+The integral is computed using the error function:
+∫[-∞ to a] exp(-((x - g.μ) / g.σ)² / 2) / g.σ dx = sqrt(π/2) * (1 + erf((a - g.μ) / (g.σ * sqrt(2))))
+
+Returns the integral value.
+"""
+function _integral(g::UnNormGauss{T}, a::Real) where {T<:Real}
+    a_T = T(a)
+    x̂ = (a_T - g.μ) / g.σ
+    return _gaussian_norm_const(T) * (one(T) + erf(x̂ / sqrt(T(2))))
+end
+
+"""
+    _integral_inversion(g::UnNormGauss, integral)
+
+Find `a` such that the integral of the unnormalized Gaussian function from -∞ to `a` equals the given `integral` value.
+
+Returns the value of `a` (in absolute coordinates).
+"""
+function _integral_inversion(g::UnNormGauss{T}, integral::Real) where {T<:Real}
+    integral_T = T(integral)
+    norm_const = _gaussian_norm_const(T)
+
+    # Solve: norm_const * (1 + erf((a - μ) / (σ * sqrt(2)))) = integral
+    # Rearranging: erf((a - μ) / (σ * sqrt(2))) = (integral / norm_const) - 1
+    ratio = integral_T / norm_const
+    erf_arg = ratio - one(T)
+
+    # Handle edge cases
+    if erf_arg <= -one(T)
+        return T(-Inf)
+    elseif erf_arg >= one(T)
+        return T(Inf)
+    end
+
+    # (a - μ) / (σ * sqrt(2)) = erfinv(erf_arg)
+    # a = μ + σ * sqrt(2) * erfinv(erf_arg)
+    x̂ = sqrt(T(2)) * erfinv(erf_arg)
+    a = g.μ + g.σ * x̂
+
+    return a
+end
+
+"""
+    _gaussian_norm_const(::Type{T})
+
+Return the Gaussian normalization constant: `sqrt(π/2)` for type `T`.
+"""
+_gaussian_norm_const(::Type{T}) where {T<:Real} = sqrt(T(π) / T(2))
 
 """
     _erf_scaled(g::UnNormGauss, x̂::Real)
 
 Compute `erf(x̂ / sqrt(2))` for scaled coordinate `x̂`.
+
+Note: This function is kept for compatibility with other distributions (e.g., DoubleCrystalBall).
+New code should use `_integral` and `_integral_inversion` instead.
 """
 function _erf_scaled(g::UnNormGauss{T}, x̂::Real) where {T<:Real}
-    return erf(x̂ / sqrt(T(2)))
+    x̂_T = T(x̂)
+    return erf(x̂_T / sqrt(T(2)))
 end
 
 """
@@ -58,9 +119,14 @@ end
 
 Compute the Gaussian CDF integral from scaled coordinate `x̂0` to `x̂1`:
 `sqrt(π/2) * (erf(x̂1/sqrt(2)) - erf(x̂0/sqrt(2)))`
+
+Note: This function is kept for compatibility with other distributions (e.g., DoubleCrystalBall).
+New code should use `_integral` instead.
 """
 function _gaussian_cdf_integral(g::UnNormGauss{T}, x̂1::Real, x̂0::Real) where {T<:Real}
-    return sqrt(T(π) / T(2)) * (_erf_scaled(g, x̂1) - _erf_scaled(g, x̂0))
+    x̂1_T = T(x̂1)
+    x̂0_T = T(x̂0)
+    return _gaussian_norm_const(T) * (_erf_scaled(g, x̂1_T) - _erf_scaled(g, x̂0_T))
 end
 
 """
@@ -69,9 +135,13 @@ end
 Compute the quantile from the argument to `erfinv`:
 Converts `arg_erfinv` to scaled coordinate `x̂ = sqrt(2) * erfinv(arg_erfinv)`,
 then returns the absolute coordinate.
+
+Note: This function is kept for compatibility with other distributions (e.g., DoubleCrystalBall).
+New code should use `_integral_inversion` instead.
 """
 function _gaussian_quantile(g::UnNormGauss{T}, arg_erfinv::Real) where {T<:Real}
-    x̂ = sqrt(T(2)) * erfinv(arg_erfinv)
+    arg_erfinv_T = T(arg_erfinv)
+    x̂ = sqrt(T(2)) * erfinv(arg_erfinv_T)
     return _from_scaled_coord(g, x̂)
 end
 
@@ -132,8 +202,11 @@ struct CrystalBall{T<:Real} <: ContinuousUnivariateDistribution
         tail = _compute_standard_tail_constants(μ, σ, α, n)
         gauss = UnNormGauss(μ, σ)
 
-        tail_contribution = _norm_const(tail)
-        core_contribution = sqrt(T(π) / 2) * (one(T) + erf(α / sqrt(T(2))))
+        tail_contribution = _integral(tail, tail.x0)
+        # Integral from x0 to +∞ = integral from -∞ to +∞ - integral from -∞ to x0
+        integral_full = _integral(gauss, T(Inf))
+        integral_to_x0 = _integral(gauss, tail.x0)
+        core_contribution = integral_full - integral_to_x0
         N = one(T) / (tail_contribution + core_contribution)
 
         new{T}(tail, gauss, N)
@@ -169,11 +242,9 @@ function Distributions.cdf(d::CrystalBall{T}, x::Real) where {T<:Real}
         return d.norm_const * _integral(d.tail, x)
     else
         # CDF at transition point + Gaussian part
-        const_tail = _norm_const(d.tail)
-        cdf_at_x0 = d.norm_const * const_tail
-        x̂ = _scaled_coord(d.gauss, x)
-        x̂0 = -d.tail.L_x0  # = (d.tail.x0 - μ) / σ
-        integral_gaussian_part = _gaussian_cdf_integral(d.gauss, x̂, x̂0)
+        cdf_at_x0 = d.norm_const * _integral(d.tail, d.tail.x0)
+        # Integral from x0 to x = integral from -∞ to x - integral from -∞ to x0
+        integral_gaussian_part = _integral(d.gauss, x) - _integral(d.gauss, d.tail.x0)
         return cdf_at_x0 + d.norm_const * integral_gaussian_part
     end
 end
@@ -195,8 +266,7 @@ function Distributions.quantile(d::CrystalBall{T}, p::Real) where {T<:Real}
     p == one(T) && return T(Inf)
 
     # CDF value at the transition point x0
-    const_tail = _norm_const(d.tail)
-    cdf_at_x0 = d.norm_const * const_tail
+    cdf_at_x0 = d.norm_const * _integral(d.tail, d.tail.x0)
 
     if p <= cdf_at_x0
         # Use _integral_inversion for tail part
@@ -205,12 +275,13 @@ function Distributions.quantile(d::CrystalBall{T}, p::Real) where {T<:Real}
         return _integral_inversion(d.tail, tail_integral)
     else
         # Gaussian part
-        term_for_erfinv_num = (p - cdf_at_x0)
-        term_for_erfinv_den = d.norm_const * sqrt(T(π) / T(2))
-        x̂0 = -d.tail.L_x0  # = (d.tail.x0 - μ) / σ
-        erf_x0_sqrt2 = _erf_scaled(d.gauss, x̂0)
-        arg_erfinv = (term_for_erfinv_num / term_for_erfinv_den) + erf_x0_sqrt2
-        return _gaussian_quantile(d.gauss, arg_erfinv)
+        # p = cdf_at_x0 + norm_const * (integral from x0 to x)
+        # So: (p - cdf_at_x0) / norm_const = integral from x0 to x
+        # = integral from -∞ to x - integral from -∞ to x0
+        # Therefore: integral from -∞ to x = (p - cdf_at_x0) / norm_const + integral from -∞ to x0
+        gaussian_integral_at_x0 = _integral(d.gauss, d.tail.x0)
+        gaussian_integral = (p - cdf_at_x0) / d.norm_const + gaussian_integral_at_x0
+        return _integral_inversion(d.gauss, gaussian_integral)
     end
 end
 
