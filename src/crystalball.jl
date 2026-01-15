@@ -164,16 +164,15 @@ Compute the cumulative distribution function (CDF) of the Crystal Ball distribut
 The CDF is calculated by integrating the PDF. This implementation handles the integral of the power-law tail and the Gaussian core separately, ensuring continuity at the transition point.
 """
 function Distributions.cdf(d::CrystalBall{T}, x::Real) where {T<:Real}
-    # Compute CDF constant using clean 4-parameter formulation
-    const_tail = _norm_const(d.tail)
-    (; N, L_x0) = d.tail
-    x̂ = _scaled_coord(d.gauss, x)
-    x̂0 = -L_x0  # = (d.tail.x0 - μ) / σ
-
     if x <= d.tail.x0
-        return d.norm_const * const_tail * ((N - L_x0 * (x̂ - x̂0)) / N)^(1 - N)
+        # Use _integral for tail part
+        return d.norm_const * _integral(d.tail, T(x))
     else
+        # CDF at transition point + Gaussian part
+        const_tail = _norm_const(d.tail)
         cdf_at_x0 = d.norm_const * const_tail
+        x̂ = _scaled_coord(d.gauss, x)
+        x̂0 = -d.tail.L_x0  # = (d.tail.x0 - μ) / σ
         integral_gaussian_part = _gaussian_cdf_integral(d.gauss, x̂, x̂0)
         return cdf_at_x0 + d.norm_const * integral_gaussian_part
     end
@@ -195,23 +194,22 @@ function Distributions.quantile(d::CrystalBall{T}, p::Real) where {T<:Real}
     p == zero(T) && return T(-Inf)
     p == one(T) && return T(Inf)
 
-    (; N, L_x0) = d.tail
-
     # CDF value at the transition point x0
     const_tail = _norm_const(d.tail)
     cdf_at_x0 = d.norm_const * const_tail
-    x̂0 = -L_x0  # = (d.tail.x0 - μ) / σ
 
     if p <= cdf_at_x0
-        x̂ = x̂0 + (N / L_x0) * (1 - (p / (d.norm_const * const_tail))^(1 / (1 - N)))
-        return _from_scaled_coord(d.gauss, x̂)
+        # Use _integral_inversion for tail part
+        # p = d.norm_const * _integral(d.tail, x), so _integral(d.tail, x) = p / d.norm_const
+        tail_integral = T(p) / d.norm_const
+        return _integral_inversion(d.tail, tail_integral)
     else
+        # Gaussian part
         term_for_erfinv_num = (p - cdf_at_x0)
         term_for_erfinv_den = d.norm_const * sqrt(T(π) / T(2))
-
+        x̂0 = -d.tail.L_x0  # = (d.tail.x0 - μ) / σ
         erf_x0_sqrt2 = _erf_scaled(d.gauss, x̂0)
         arg_erfinv = (term_for_erfinv_num / term_for_erfinv_den) + erf_x0_sqrt2
-
         return _gaussian_quantile(d.gauss, arg_erfinv)
     end
 end
