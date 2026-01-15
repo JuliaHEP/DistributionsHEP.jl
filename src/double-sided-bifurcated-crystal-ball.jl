@@ -155,9 +155,6 @@ function Distributions.cdf(d::DoubleSidedBifurcatedCrystalBall{T}, x::Real) wher
         return d.norm_const * _integral(d.left_tail, x)
     elseif x >= d.right_tail.x0
         # Right power-law tail
-        # For right tail, _integral(right_tail, x) = -∫[x, +∞] and _integral(right_tail, x0R) = -∫[x0R, +∞]
-        # CDF(x) = CDF(x0R) + ∫[x0R, x] = CDF(x0R) + (∫[x0R, +∞] - ∫[x, +∞])
-        # = CDF(x0R) + (_integral(right_tail, x) - _integral(right_tail, x0R))
         integral_at_x = _integral(d.right_tail, x)
         integral_at_x0R = _integral(d.right_tail, d.right_tail.x0)
         return cdf_at_xR + d.norm_const * (integral_at_x - integral_at_x0R)
@@ -183,16 +180,10 @@ function Distributions.quantile(d::DoubleSidedBifurcatedCrystalBall{T}, p::Real)
         tail_integral = p / d.norm_const
         return _integral_inversion(d.left_tail, tail_integral)
     elseif p >= cdf_at_xR
-        # Right power-law tail
-        # For right tail: CDF(x) = CDF(x0R) + N * (_integral(right_tail, x) - _integral(right_tail, x0R))
-        # So: _integral(right_tail, x) = (p - cdf_at_xR) / N + _integral(right_tail, x0R)
         integral_at_x0R = _integral(d.right_tail, d.right_tail.x0)
         tail_integral = (p - cdf_at_xR) / d.norm_const + integral_at_x0R
         return _integral_inversion(d.right_tail, tail_integral)
     else
-        # Bifurcated Gaussian core
-        # p = cdf_at_xL + N * (cdf(BifGauss, x) - cdf(BifGauss, xL))
-        # So: cdf(BifGauss, x) = (p - cdf_at_xL) / N + cdf(BifGauss, xL)
         target_cdf = (p - cdf_at_xL) / d.norm_const + cdf(d.BifGauss, d.left_tail.x0)
         return quantile(d.BifGauss, target_cdf)
     end
