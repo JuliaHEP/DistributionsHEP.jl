@@ -34,10 +34,11 @@ For L_x0 < 0, the result is the negative of the integral from a to +∞.
 
 Returns the integral value.
 """
-function _integral(t::CrystalBallTail{T}, a::T) where {T<:Real}
+function _integral(t::CrystalBallTail{T}, a::Real) where {T<:Real}
     (; G_x0, N, L_x0, x0) = t
     # Compute offset from transition point
-    offset_a = a - x0
+    a_T = T(a)
+    offset_a = a_T - x0
     const_tail = _norm_const(t)
     return const_tail * ((N - L_x0 * offset_a) / N)^(one(T) - N)
 end
@@ -52,11 +53,12 @@ For right tail (L_x0 < 0): finds `a` such that `_integral(t, a) = integral` (whe
 
 Returns the value of `a` (in absolute coordinates).
 """
-function _integral_inversion(t::CrystalBallTail{T}, integral::T) where {T<:Real}
+function _integral_inversion(t::CrystalBallTail{T}, integral::Real) where {T<:Real}
     (; N, L_x0, x0) = t
     const_tail = _norm_const(t)
     # 
-    ratio = integral / const_tail
+    integral_T = T(integral)
+    ratio = integral_T / const_tail
     ratio_power = ratio^(one(T) / (one(T) - N))
     offset_a = (N / L_x0) * (one(T) - ratio_power)
     # Convert back to absolute coordinate

@@ -166,7 +166,7 @@ The CDF is calculated by integrating the PDF. This implementation handles the in
 function Distributions.cdf(d::CrystalBall{T}, x::Real) where {T<:Real}
     if x <= d.tail.x0
         # Use _integral for tail part
-        return d.norm_const * _integral(d.tail, T(x))
+        return d.norm_const * _integral(d.tail, x)
     else
         # CDF at transition point + Gaussian part
         const_tail = _norm_const(d.tail)
@@ -201,7 +201,7 @@ function Distributions.quantile(d::CrystalBall{T}, p::Real) where {T<:Real}
     if p <= cdf_at_x0
         # Use _integral_inversion for tail part
         # p = d.norm_const * _integral(d.tail, x), so _integral(d.tail, x) = p / d.norm_const
-        tail_integral = T(p) / d.norm_const
+        tail_integral = p / d.norm_const
         return _integral_inversion(d.tail, tail_integral)
     else
         # Gaussian part
