@@ -12,7 +12,7 @@ params = [
 
 x_range = -7:0.01:7
 
-pv = map(enumerate(params)) do (i, (μ, σ, ψ, αL, nL, αR, nR))
+pv = map(params) do (μ, σ, ψ, αL, nL, αR, nR)
     d = DoubleSidedBifurcatedCrystalBall(μ, σ, ψ, αL, nL, αR, nR)
     p1 = plot(
         x_range,
@@ -22,10 +22,10 @@ pv = map(enumerate(params)) do (i, (μ, σ, ψ, αL, nL, αR, nR))
         ylabel="PDF",
         linewidth=2,
     )
-    # 
+    # Mark transition points using actual x0 values from the distribution
     scatter!(
-        [-αL * σ + μ, αR * σ + μ],
-        [pdf(d, -αL * σ + μ), pdf(d, αR * σ + μ)],
+        [d.left_tail.x0, d.right_tail.x0],
+        [pdf(d, d.left_tail.x0), pdf(d, d.right_tail.x0)],
         label="Transitions",
         markersize=6,
         color=:red,
@@ -42,8 +42,8 @@ pv = map(enumerate(params)) do (i, (μ, σ, ψ, αL, nL, αR, nR))
     )
 
     scatter!(
-        [-αL * σ + μ, αR * σ + μ],
-        [cdf(d, -αL * σ + μ), cdf(d, αR * σ + μ)],
+        [d.left_tail.x0, d.right_tail.x0],
+        [cdf(d, d.left_tail.x0), cdf(d, d.right_tail.x0)],
         markersize=3,
         color=:red,
     )
