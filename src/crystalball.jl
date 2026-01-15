@@ -6,84 +6,6 @@ function _check_crystalball_params(σ::T, α::T, n::T) where {T<:Real}
 end
 
 """
-    UnNormGauss{T<:Real}
-
-A struct that encapsulates the unnormalized Gaussian computation to avoid repeated
-and error-prone calculations of `exp(-((x - μ) / σ)^2 / 2)`.
-"""
-struct UnNormGauss{T<:Real}
-    μ::T  # Mean
-    σ::T  # Standard deviation
-end
-
-"""
-    _value(g::UnNormGauss, x::Real)
-
-Compute the normalized Gaussian value at point `x`:
-`(1 / (σ * sqrt(2π))) * exp(-((x - g.μ) / g.σ)^2 / 2)`
-
-This is the standard normalized Gaussian PDF.
-"""
-function _value(g::UnNormGauss{T}, x::Real) where {T<:Real}
-    x_T = T(x)
-    return (T(1) / (g.σ * sqrt(T(2) * T(π)))) * exp(-((x_T - g.μ) / g.σ)^2 / 2)
-end
-
-
-"""
-    _gaussian_half_norm_const(::Type{T})
-
-Return the constant `1/2` for type `T`.
-
-This constant appears in the integral of the normalized Gaussian:
-∫[-∞ to a] _value(x) dx = (1/2) * (1 + erf((a-μ)/(σ*sqrt(2))))
-"""
-_gaussian_half_norm_const(::Type{T}) where {T<:Real} = T(1) / T(2)
-
-
-"""
-    _integral(g::UnNormGauss, a)
-
-Compute the integral of the normalized Gaussian function from -∞ to `a` (in absolute coordinates).
-
-The integral is computed using the error function:
-∫[-∞ to a] _value(x) dx = (1/2) * (1 + erf((a - g.μ) / (g.σ * sqrt(2))))
-
-Returns the integral value.
-"""
-function _integral(g::UnNormGauss{T}, a::Real) where {T<:Real}
-    a_T = T(a)
-    x̂ = (a_T - g.μ) / g.σ
-    return _gaussian_half_norm_const(T) * (one(T) + erf(x̂ / sqrt(T(2))))
-end
-
-"""
-    _integral_inversion(g::UnNormGauss, integral)
-
-Find `a` such that the integral of the normalized Gaussian function from -∞ to `a` equals the given `integral` value.
-
-Returns the value of `a` (in absolute coordinates).
-"""
-function _integral_inversion(g::UnNormGauss{T}, integral::Real) where {T<:Real}
-    integral_T = T(integral)
-    norm_const = _gaussian_half_norm_const(T)
-
-    ratio = integral_T / norm_const
-    erf_arg = ratio - one(T)
-
-    # Handle edge cases
-    if erf_arg <= -one(T)
-        return T(-Inf)
-    elseif erf_arg >= one(T)
-        return T(Inf)
-    end
-
-    x̂ = sqrt(T(2)) * erfinv(erf_arg)
-    a = g.μ + g.σ * x̂
-    return a
-end
-
-"""
     CrystalBall{T<:Real} <: ContinuousUnivariateDistribution
 
 The Crystal Ball distribution is a probability distribution commonly used in high-energy physics to model various lossy processes.
@@ -121,24 +43,24 @@ plot(-2, 4, x->pdf(d, x))
 """
 struct CrystalBall{T<:Real} <: ContinuousUnivariateDistribution
     tail::CrystalBallTail{T}  # Tail parameters
-    gauss::UnNormGauss{T}      # Unnormalized Gaussian helper
+    gauss::Normal{T}          # Normal distribution helper
     # Precomputed constants for PDF calculation
     norm_const::T # Normalization constant N
 
     function CrystalBall(μ::T, σ::T, α::T, n::T) where {T<:Real}
         _check_crystalball_params(σ, α, n)
 
-        gauss = UnNormGauss(μ, σ)
+        gauss = Normal(μ, σ)
         x0 = μ - α * σ
-        # Use _value from UnNormGauss to get normalized G_x0 at transition point
-        G_x0 = _value(gauss, x0)
+        # Use pdf from Normal to get normalized G_x0 at transition point
+        G_x0 = pdf(gauss, x0)
         L_x0 = α
         tail = CrystalBallTail(G_x0, n, L_x0, x0)
 
         tail_contribution = _integral(tail, tail.x0)
         # Integral from x0 to +∞ = integral from -∞ to +∞ - integral from -∞ to x0
-        integral_full = _integral(gauss, T(Inf))
-        integral_to_x0 = _integral(gauss, tail.x0)
+        integral_full = cdf(gauss, T(Inf))
+        integral_to_x0 = cdf(gauss, tail.x0)
         core_contribution = integral_full - integral_to_x0
         N = one(T) / (tail_contribution + core_contribution)
 
@@ -147,7 +69,7 @@ struct CrystalBall{T<:Real} <: ContinuousUnivariateDistribution
 end
 
 function Distributions.pdf(d::CrystalBall{T}, x::Real) where {T<:Real}
-    x > d.tail.x0 && return d.norm_const * _value(d.gauss, x)
+    x > d.tail.x0 && return d.norm_const * pdf(d.gauss, x)
 
     # Tail part: _value expects absolute offset (x - x0), not scaled
     offset = x - d.tail.x0
@@ -160,7 +82,7 @@ function Distributions.cdf(d::CrystalBall{T}, x::Real) where {T<:Real}
     # Gaussian core
     cdf_at_x0 = d.norm_const * _integral(d.tail, d.tail.x0)  # CDF at transition point
     # Integral from x0 to x = integral from -∞ to x - integral from -∞ to x0
-    integral_gaussian_part = _integral(d.gauss, x) - _integral(d.gauss, d.tail.x0)
+    integral_gaussian_part = cdf(d.gauss, x) - cdf(d.gauss, d.tail.x0)
     return cdf_at_x0 + d.norm_const * integral_gaussian_part
 end
 
@@ -179,9 +101,9 @@ function Distributions.quantile(d::CrystalBall{T}, p::Real) where {T<:Real}
         return _integral_inversion(d.tail, tail_integral)
     else
         # Gaussian part
-        gaussian_integral_at_x0 = _integral(d.gauss, d.tail.x0)
+        gaussian_integral_at_x0 = cdf(d.gauss, d.tail.x0)
         gaussian_integral = (p - cdf_at_x0) / d.norm_const + gaussian_integral_at_x0
-        return _integral_inversion(d.gauss, gaussian_integral)
+        return quantile(d.gauss, gaussian_integral)
     end
 end
 

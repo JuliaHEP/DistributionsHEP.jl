@@ -52,31 +52,31 @@ plot(-5, 5, x->pdf(d, x))
 struct DoubleCrystalBall{T<:Real} <: ContinuousUnivariateDistribution
     left_tail::CrystalBallTail{T}
     right_tail::CrystalBallTail{T}
-    gauss::UnNormGauss{T}      # Unnormalized Gaussian helper
+    gauss::Normal{T}          # Normal distribution helper
     norm_const::T
 
     function DoubleCrystalBall(μ::T, σ::T, αL::T, nL::T, αR::T, nR::T) where {T<:Real}
         _check_double_crystalball_params(σ, αL, nL, αR, nR)
 
-        gauss = UnNormGauss(μ, σ)
+        gauss = Normal(μ, σ)
 
         x0L = μ - αL * σ
-        # Use _value from UnNormGauss to get normalized G_x0 at transition point
-        G_x0L = _value(gauss, x0L)
+        # Use pdf from Normal to get normalized G_x0 at transition point
+        G_x0L = pdf(gauss, x0L)
         L_x0L = αL # log derivative is just equal to αL
         left_tail = CrystalBallTail(G_x0L, nL, L_x0L, x0L)
 
         x0R = μ + αR * σ
-        # Use _value from UnNormGauss to get normalized G_x0 at transition point
-        G_x0R = _value(gauss, x0R)
+        # Use pdf from Normal to get normalized G_x0 at transition point
+        G_x0R = pdf(gauss, x0R)
         L_x0R = -αR  # Negative as should be for rightward tail
         right_tail = CrystalBallTail(G_x0R, nR, L_x0R, x0R)
 
         left_tail_contribution = _integral(left_tail, left_tail.x0)
         right_tail_contribution = -_integral(right_tail, right_tail.x0)  # Right tail has negative L_x0, so negate
         # Integral from x0L to x0R = integral from -∞ to x0R - integral from -∞ to x0L
-        integral_to_x0R = _integral(gauss, right_tail.x0)
-        integral_to_x0L = _integral(gauss, left_tail.x0)
+        integral_to_x0R = cdf(gauss, right_tail.x0)
+        integral_to_x0L = cdf(gauss, left_tail.x0)
         core_contribution = integral_to_x0R - integral_to_x0L
         N = one(T) / (left_tail_contribution + right_tail_contribution + core_contribution)
 
@@ -96,8 +96,8 @@ Returns a tuple `(cdf_at_minus_alphaL, cdf_at_plus_alphaR)` where:
 function _compute_transition_cdf_values(d::DoubleCrystalBall{T}) where {T<:Real}
     cdf_at_minus_alphaL = d.norm_const * _integral(d.left_tail, d.left_tail.x0)
     # Integral from x0L to x0R = integral from -∞ to x0R - integral from -∞ to x0L
-    integral_to_x0R = _integral(d.gauss, d.right_tail.x0)
-    integral_to_x0L = _integral(d.gauss, d.left_tail.x0)
+    integral_to_x0R = cdf(d.gauss, d.right_tail.x0)
+    integral_to_x0L = cdf(d.gauss, d.left_tail.x0)
     cdf_at_plus_alphaR = cdf_at_minus_alphaL + d.norm_const * (integral_to_x0R - integral_to_x0L)
 
     return cdf_at_minus_alphaL, cdf_at_plus_alphaR
@@ -112,7 +112,7 @@ function Distributions.pdf(d::DoubleCrystalBall{T}, x::Real) where {T<:Real}
     end
     # Gaussian core
     if x <= d.right_tail.x0
-        return d.norm_const * _value(d.gauss, x)
+        return d.norm_const * pdf(d.gauss, x)
     end
     # Right power-law tail
     offset = x - d.right_tail.x0
@@ -136,8 +136,8 @@ function Distributions.cdf(d::DoubleCrystalBall{T}, x::Real) where {T<:Real}
     else
         # Gaussian core
         # Integral from x0L to x = integral from -∞ to x - integral from -∞ to x0L
-        integral_to_x = _integral(d.gauss, x)
-        integral_to_x0L = _integral(d.gauss, d.left_tail.x0)
+        integral_to_x = cdf(d.gauss, x)
+        integral_to_x0L = cdf(d.gauss, d.left_tail.x0)
         integral_gaussian_part = integral_to_x - integral_to_x0L
         return cdf_at_minus_alphaL + d.norm_const * integral_gaussian_part
     end
@@ -168,9 +168,9 @@ function Distributions.quantile(d::DoubleCrystalBall{T}, p::Real) where {T<:Real
         # Gaussian core
         # p = cdf_at_minus_alphaL + N * (integral from x0L to x)
         # So: integral from -∞ to x = (p - cdf_at_minus_alphaL) / N + integral from -∞ to x0L
-        gaussian_integral_at_x0L = _integral(d.gauss, d.left_tail.x0)
+        gaussian_integral_at_x0L = cdf(d.gauss, d.left_tail.x0)
         gaussian_integral = (p - cdf_at_minus_alphaL) / d.norm_const + gaussian_integral_at_x0L
-        return _integral_inversion(d.gauss, gaussian_integral)
+        return quantile(d.gauss, gaussian_integral)
     end
 end
 
