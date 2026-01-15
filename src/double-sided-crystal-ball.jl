@@ -54,19 +54,19 @@ struct DoubleCrystalBall{T<:Real} <: ContinuousUnivariateDistribution
     function DoubleCrystalBall(μ::T, σ::T, αL::T, nL::T, αR::T, nR::T) where {T<:Real}
         _check_double_crystalball_params(σ, αL, nL, αR, nR)
 
+        gauss = UnNormGauss(μ, σ)
+
         x0L = μ - αL * σ
-        # G_x0 is now normalized to match the normalized Gaussian _value
-        G_x0L = (one(T) / (σ * sqrt(T(2) * T(π)))) * exp(-αL^2 / 2)
+        # Use _value from UnNormGauss to get normalized G_x0 at transition point
+        G_x0L = _value(gauss, x0L)
         L_x0L = αL # log derivative is just equal to αL
         left_tail = CrystalBallTail(G_x0L, nL, L_x0L, x0L)
 
         x0R = μ + αR * σ
-        # G_x0 is now normalized to match the normalized Gaussian _value
-        G_x0R = (one(T) / (σ * sqrt(T(2) * T(π)))) * exp(-αR^2 / 2)
+        # Use _value from UnNormGauss to get normalized G_x0 at transition point
+        G_x0R = _value(gauss, x0R)
         L_x0R = -αR  # Negative as should be for rightward tail
         right_tail = CrystalBallTail(G_x0R, nR, L_x0R, x0R)
-
-        gauss = UnNormGauss(μ, σ)
 
         left_tail_contribution = _integral(left_tail, left_tail.x0)
         right_tail_contribution = -_integral(right_tail, right_tail.x0)  # Right tail has negative L_x0, so negate

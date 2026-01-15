@@ -4,7 +4,9 @@ using DistributionsHEP
 # Access internal functions via the module
 _integral = DistributionsHEP._integral
 _integral_inversion = DistributionsHEP._integral_inversion
-_compute_standard_tail_constants = DistributionsHEP._compute_standard_tail_constants
+_value = DistributionsHEP._value
+UnNormGauss = DistributionsHEP.UnNormGauss
+CrystalBallTail = DistributionsHEP.CrystalBallTail
 
 @testset "CrystalBallTail integral functions" verbose = true begin
 
@@ -13,7 +15,12 @@ _compute_standard_tail_constants = DistributionsHEP._compute_standard_tail_const
     σ = 1.0
     α = 2.0  # positive, so L_x0 = α > 0
     n = 3.2
-    tail = _compute_standard_tail_constants(μ, σ, α, n)
+    # Create tail in-place using _value from UnNormGauss
+    gauss = UnNormGauss(μ, σ)
+    x0 = μ - α * σ
+    G_x0 = _value(gauss, x0)
+    L_x0 = α
+    tail = CrystalBallTail(G_x0, n, L_x0, x0)
 
     @test tail.L_x0 > 0  # Verify it's a left tail
 

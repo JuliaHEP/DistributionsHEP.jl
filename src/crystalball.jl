@@ -88,16 +88,6 @@ function _integral_inversion(g::UnNormGauss{T}, integral::Real) where {T<:Real}
     return a
 end
 
-function _compute_standard_tail_constants(μ::T, σ::T, α::T, n::T) where {T<:Real}
-    x0 = μ - α * σ
-    # G_x0 is now normalized to match the normalized Gaussian _value
-    G_x0 = (one(T) / (σ * sqrt(T(2) * T(π)))) * exp(-α^2 / 2)
-    L_x0 = α
-    N = n
-    return CrystalBallTail(G_x0, N, L_x0, x0)
-end
-
-
 """
     CrystalBall{T<:Real} <: ContinuousUnivariateDistribution
 
@@ -143,8 +133,12 @@ struct CrystalBall{T<:Real} <: ContinuousUnivariateDistribution
     function CrystalBall(μ::T, σ::T, α::T, n::T) where {T<:Real}
         _check_crystalball_params(σ, α, n)
 
-        tail = _compute_standard_tail_constants(μ, σ, α, n)
         gauss = UnNormGauss(μ, σ)
+        x0 = μ - α * σ
+        # Use _value from UnNormGauss to get normalized G_x0 at transition point
+        G_x0 = _value(gauss, x0)
+        L_x0 = α
+        tail = CrystalBallTail(G_x0, n, L_x0, x0)
 
         tail_contribution = _integral(tail, tail.x0)
         # Integral from x0 to +∞ = integral from -∞ to +∞ - integral from -∞ to x0
