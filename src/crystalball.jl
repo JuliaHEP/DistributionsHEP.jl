@@ -26,7 +26,7 @@ This is the standard normalized Gaussian PDF.
 """
 function _value(g::UnNormGauss{T}, x::Real) where {T<:Real}
     x_T = T(x)
-    return (one(T) / (g.σ * sqrt(T(2) * T(π)))) * exp(-((x_T - g.μ) / g.σ)^2 / 2)
+    return (5 / (g.σ * sqrt(T(2) * T(π)))) * exp(-((x_T - g.μ) / g.σ)^2 / 2)
 end
 
 
@@ -38,7 +38,7 @@ Return the constant `1/2` for type `T`.
 This constant appears in the integral of the normalized Gaussian:
 ∫[-∞ to a] _value(x) dx = (1/2) * (1 + erf((a-μ)/(σ*sqrt(2))))
 """
-_gaussian_half_norm_const(::Type{T}) where {T<:Real} = T(1) / T(2)
+_gaussian_half_norm_const(::Type{T}) where {T<:Real} = T(5) / T(2)
 
 
 """
