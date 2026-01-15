@@ -55,40 +55,39 @@ struct DoubleCrystalBall{T<:Real} <: ContinuousUnivariateDistribution
         _check_double_crystalball_params(σ, αL, nL, αR, nR)
 
         x0L = μ - αL * σ
-        G_x0L = exp(-αL^2 / 2) # Unnormalized in scaled coordinates
+        # G_x0 is now normalized to match the normalized Gaussian _value
+        G_x0L = (one(T) / (σ * sqrt(T(2) * T(π)))) * exp(-αL^2 / 2)
         L_x0L = αL # log derivative is just equal to αL
         left_tail = CrystalBallTail(G_x0L, nL, L_x0L, x0L)
 
         x0R = μ + αR * σ
-        G_x0R = exp(-αR^2 / 2) # Unnormalized in scaled coordinates
+        # G_x0 is now normalized to match the normalized Gaussian _value
+        G_x0R = (one(T) / (σ * sqrt(T(2) * T(π)))) * exp(-αR^2 / 2)
         L_x0R = -αR  # Negative as should be for rightward tail
         right_tail = CrystalBallTail(G_x0R, nR, L_x0R, x0R)
 
         gauss = UnNormGauss(μ, σ)
 
-        norm_left_tail = _norm_const(left_tail)
-        norm_right_tail = -_norm_const(right_tail)  # Right tail has negative L_x0, so negate
-        core_contribution = sqrt(T(π) / 2) * (erf(αR / sqrt(T(2))) + erf(αL / sqrt(T(2))))
-        N = one(T) / (norm_left_tail + norm_right_tail + core_contribution)
+        left_tail_contribution = _integral(left_tail, left_tail.x0)
+        right_tail_contribution = -_integral(right_tail, right_tail.x0)  # Right tail has negative L_x0, so negate
+        # Integral from x0L to x0R = integral from -∞ to x0R - integral from -∞ to x0L
+        integral_to_x0R = _integral(gauss, right_tail.x0)
+        integral_to_x0L = _integral(gauss, left_tail.x0)
+        core_contribution = integral_to_x0R - integral_to_x0L
+        N = one(T) / (left_tail_contribution + right_tail_contribution + core_contribution)
 
         new{T}(left_tail, right_tail, gauss, N)
     end
 end
 
 # Helper function to compute CDF values at transition points
-# Using clean 4-parameter formulation
 function _compute_transition_cdf_values(d::DoubleCrystalBall{T}) where {T<:Real}
-    # CDF values at transition points using clean formulation
-    const_left = _norm_const(d.left_tail)
-    cdf_at_minus_alphaL = d.norm_const * const_left
-    # Compute αL and αR from x0: x0L = μ - αL*σ, x0R = μ + αR*σ
-    x̂0L = _scaled_coord(d.gauss, d.left_tail.x0)  # = -αL
-    x̂0R = _scaled_coord(d.gauss, d.right_tail.x0)  # = αR
-    cdf_at_plus_alphaR =
-        cdf_at_minus_alphaL +
-        d.norm_const *
-        sqrt(T(π) / T(2)) *
-        (_erf_scaled(d.gauss, x̂0R) + _erf_scaled(d.gauss, -x̂0L))
+    # CDF values at transition points using _integral
+    cdf_at_minus_alphaL = d.norm_const * _integral(d.left_tail, d.left_tail.x0)
+    # Integral from x0L to x0R = integral from -∞ to x0R - integral from -∞ to x0L
+    integral_to_x0R = _integral(d.gauss, d.right_tail.x0)
+    integral_to_x0L = _integral(d.gauss, d.left_tail.x0)
+    cdf_at_plus_alphaR = cdf_at_minus_alphaL + d.norm_const * (integral_to_x0R - integral_to_x0L)
 
     return cdf_at_minus_alphaL, cdf_at_plus_alphaR
 end
@@ -99,7 +98,7 @@ function Distributions.pdf(d::DoubleCrystalBall{T}, x::Real) where {T<:Real}
     # Left power-law tail: using clean 4-parameter formulation (in scaled coordinates)
     if x < d.left_tail.x0
         x̂0L = _scaled_coord(d.gauss, d.left_tail.x0)  # = -αL
-        return d.norm_const * _value(d.left_tail, x̂ - x̂0L) / d.gauss.σ
+        return d.norm_const * _value(d.left_tail, x̂ - x̂0L)
     end
     # Gaussian core
     if x <= d.right_tail.x0
@@ -107,27 +106,29 @@ function Distributions.pdf(d::DoubleCrystalBall{T}, x::Real) where {T<:Real}
     end
     # Right power-law tail: using clean 4-parameter formulation (in scaled coordinates)
     x̂0R = _scaled_coord(d.gauss, d.right_tail.x0)  # = αR
-    return d.norm_const * _value(d.right_tail, x̂ - x̂0R) / d.gauss.σ
+    return d.norm_const * _value(d.right_tail, x̂ - x̂0R)
 end
 
 function Distributions.cdf(d::DoubleCrystalBall{T}, x::Real) where {T<:Real}
     # CDF values at transition points using clean 4-parameter formulation
     cdf_at_minus_alphaL, cdf_at_plus_alphaR = _compute_transition_cdf_values(d)
-    const_left = _norm_const(d.left_tail)
-    const_right = -_norm_const(d.right_tail)  # Right tail has negative L_x0, so negate
-    x̂ = _scaled_coord(d.gauss, x)
-    x̂0L = _scaled_coord(d.gauss, d.left_tail.x0)  # = -αL
-    x̂0R = _scaled_coord(d.gauss, d.right_tail.x0)  # = αR
-
     if x <= d.left_tail.x0
-        # CDF for the left power-law tail: using clean 4-parameter formulation (in scaled coordinates)
-        return d.norm_const * const_left * ((d.left_tail.N - d.left_tail.L_x0 * (x̂ - x̂0L)) / d.left_tail.N)^(1 - d.left_tail.N)
+        # CDF for the left power-law tail: use _integral
+        return d.norm_const * _integral(d.left_tail, x)
     elseif x >= d.right_tail.x0
-        # CDF for the right power-law tail: using clean 4-parameter formulation (in scaled coordinates)
-        return cdf_at_plus_alphaR + d.norm_const * (-const_right * ((d.right_tail.N - d.right_tail.L_x0 * (x̂ - x̂0R)) / d.right_tail.N)^(1 - d.right_tail.N) + const_right)
+        # CDF for the right power-law tail: use _integral
+        # For right tail, _integral(right_tail, x) = -∫[x, +∞] and _integral(right_tail, x0R) = -∫[x0R, +∞]
+        # CDF(x) = CDF(x0R) + ∫[x0R, x] = CDF(x0R) + (∫[x0R, +∞] - ∫[x, +∞])
+        # = CDF(x0R) + (_integral(right_tail, x) - _integral(right_tail, x0R))
+        integral_at_x = _integral(d.right_tail, x)
+        integral_at_x0R = _integral(d.right_tail, d.right_tail.x0)
+        return cdf_at_plus_alphaR + d.norm_const * (integral_at_x - integral_at_x0R)
     else
         # CDF for the Gaussian core
-        integral_gaussian_part = _gaussian_cdf_integral(d.gauss, x̂, x̂0L)
+        # Integral from x0L to x = integral from -∞ to x - integral from -∞ to x0L
+        integral_to_x = _integral(d.gauss, x)
+        integral_to_x0L = _integral(d.gauss, d.left_tail.x0)
+        integral_gaussian_part = integral_to_x - integral_to_x0L
         return cdf_at_minus_alphaL + d.norm_const * integral_gaussian_part
     end
 end
@@ -143,30 +144,24 @@ function Distributions.quantile(d::DoubleCrystalBall{T}, p::Real) where {T<:Real
     # CDF values at transition points (same as in CDF function)
     cdf_at_minus_alphaL, cdf_at_plus_alphaR = _compute_transition_cdf_values(d)
 
-    const_left = _norm_const(d.left_tail)
-    const_right = -_norm_const(d.right_tail)  # Right tail has negative L_x0, so negate
-    x̂0L = _scaled_coord(d.gauss, d.left_tail.x0)  # = -αL
-    x̂0R = _scaled_coord(d.gauss, d.right_tail.x0)  # = αR
-
     if p <= cdf_at_minus_alphaL
-        # Quantile is in the left power-law tail: using clean 4-parameter formulation (in scaled coordinates)
-        x̂ = x̂0L + (d.left_tail.N / d.left_tail.L_x0) * (1 - (p / (d.norm_const * const_left))^(1 / (1 - d.left_tail.N)))
-        return _from_scaled_coord(d.gauss, x̂)
+        # Quantile is in the left power-law tail: use _integral_inversion
+        tail_integral = p / d.norm_const
+        return _integral_inversion(d.left_tail, tail_integral)
     elseif p >= cdf_at_plus_alphaR
-        # Quantile is in the right power-law tail: using clean 4-parameter formulation (in scaled coordinates)
-        x̂ = x̂0R + (d.right_tail.N / d.right_tail.L_x0) * (1 - (-1 / const_right * ((p - cdf_at_plus_alphaR) / d.norm_const - const_right))^(1 / (1 - d.right_tail.N)))
-        return _from_scaled_coord(d.gauss, x̂)
+        # Quantile is in the right power-law tail: use _integral_inversion
+        # For right tail: CDF(x) = CDF(x0R) + N * (_integral(right_tail, x) - _integral(right_tail, x0R))
+        # So: _integral(right_tail, x) = (p - cdf_at_plus_alphaR) / N + _integral(right_tail, x0R)
+        integral_at_x0R = _integral(d.right_tail, d.right_tail.x0)
+        tail_integral = (p - cdf_at_plus_alphaR) / d.norm_const + integral_at_x0R
+        return _integral_inversion(d.right_tail, tail_integral)
     else
         # Quantile is in the Gaussian core
-        # Solve: p = cdf_at_minus_alphaL + N * sqrt(π/2) * (erf(x̂/sqrt(2)) - erf(x̂0L/sqrt(2)))
-        # Rearranging: erf(x̂/sqrt(2)) = (p - cdf_at_minus_alphaL) / (N * sqrt(π/2)) + erf(x̂0L/sqrt(2))
-        term_for_erfinv_num = (p - cdf_at_minus_alphaL)
-        term_for_erfinv_den = d.norm_const * sqrt(T(π) / T(2))
-
-        erf_x0L_sqrt2 = _erf_scaled(d.gauss, x̂0L)
-        arg_erfinv = (term_for_erfinv_num / term_for_erfinv_den) + erf_x0L_sqrt2
-
-        return _gaussian_quantile(d.gauss, arg_erfinv)
+        # p = cdf_at_minus_alphaL + N * (integral from x0L to x)
+        # So: integral from -∞ to x = (p - cdf_at_minus_alphaL) / N + integral from -∞ to x0L
+        gaussian_integral_at_x0L = _integral(d.gauss, d.left_tail.x0)
+        gaussian_integral = (p - cdf_at_minus_alphaL) / d.norm_const + gaussian_integral_at_x0L
+        return _integral_inversion(d.gauss, gaussian_integral)
     end
 end
 

@@ -19,32 +19,35 @@ end
 """
     _value(g::UnNormGauss, x::Real)
 
-Compute the unnormalized Gaussian value at point `x`:
-`exp(-((x - g.μ) / g.σ)^2 / 2) / g.σ`
+Compute the normalized Gaussian value at point `x`:
+`(1 / (σ * sqrt(2π))) * exp(-((x - g.μ) / g.σ)^2 / 2)`
 
-The `1/σ` factor is included in this function.
+This is the standard normalized Gaussian PDF.
 """
 function _value(g::UnNormGauss{T}, x::Real) where {T<:Real}
     x_T = T(x)
-    return exp(-((x_T - g.μ) / g.σ)^2 / 2) / g.σ
+    return (one(T) / (g.σ * sqrt(T(2) * T(π)))) * exp(-((x_T - g.μ) / g.σ)^2 / 2)
 end
 
 
 """
     _gaussian_half_norm_const(::Type{T})
 
-Return the Gaussian normalization constant: `sqrt(π/2)` for type `T`.
+Return the constant `1/2` for type `T`.
+
+This constant appears in the integral of the normalized Gaussian:
+∫[-∞ to a] _value(x) dx = (1/2) * (1 + erf((a-μ)/(σ*sqrt(2))))
 """
-_gaussian_half_norm_const(::Type{T}) where {T<:Real} = sqrt(T(π) / T(2))
+_gaussian_half_norm_const(::Type{T}) where {T<:Real} = T(1) / T(2)
 
 
 """
     _integral(g::UnNormGauss, a)
 
-Compute the integral of the unnormalized Gaussian function from -∞ to `a` (in absolute coordinates).
+Compute the integral of the normalized Gaussian function from -∞ to `a` (in absolute coordinates).
 
 The integral is computed using the error function:
-∫[-∞ to a] exp(-((x - g.μ) / g.σ)² / 2) / g.σ dx = sqrt(π/2) * (1 + erf((a - g.μ) / (g.σ * sqrt(2))))
+∫[-∞ to a] _value(x) dx = (1/2) * (1 + erf((a - g.μ) / (g.σ * sqrt(2))))
 
 Returns the integral value.
 """
@@ -57,7 +60,7 @@ end
 """
     _integral_inversion(g::UnNormGauss, integral)
 
-Find `a` such that the integral of the unnormalized Gaussian function from -∞ to `a` equals the given `integral` value.
+Find `a` such that the integral of the normalized Gaussian function from -∞ to `a` equals the given `integral` value.
 
 Returns the value of `a` (in absolute coordinates).
 """
@@ -87,7 +90,8 @@ end
 
 function _compute_standard_tail_constants(μ::T, σ::T, α::T, n::T) where {T<:Real}
     x0 = μ - α * σ
-    G_x0 = exp(-α^2 / 2)
+    # G_x0 is now normalized to match the normalized Gaussian _value
+    G_x0 = (one(T) / (σ * sqrt(T(2) * T(π)))) * exp(-α^2 / 2)
     L_x0 = α
     N = n
     return CrystalBallTail(G_x0, N, L_x0, x0)
@@ -166,7 +170,7 @@ function Distributions.pdf(d::CrystalBall{T}, x::Real) where {T<:Real}
 
     x̂ = _scaled_coord(d.gauss, x)
     x̂0 = _scaled_coord(d.gauss, d.tail.x0)  # = -α
-    return d.norm_const * _value(d.tail, x̂ - x̂0) / d.gauss.σ
+    return d.norm_const * _value(d.tail, x̂ - x̂0)
 end
 
 """
