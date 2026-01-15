@@ -20,31 +20,13 @@ end
     _value(g::UnNormGauss, x::Real)
 
 Compute the unnormalized Gaussian value at point `x`:
-`exp(-((x - g.μ) / g.σ)^2 / 2)`
+`exp(-((x - g.μ) / g.σ)^2 / 2) / g.σ`
+
+The `1/σ` factor is included in this function.
 """
 function _value(g::UnNormGauss{T}, x::Real) where {T<:Real}
     x_T = T(x)
-    return exp(-((x_T - g.μ) / g.σ)^2 / 2)
-end
-
-"""
-    _scaled_coord(g::UnNormGauss, x::Real)
-
-Convert absolute coordinate `x` to scaled coordinate: `(x - g.μ) / g.σ`
-"""
-function _scaled_coord(g::UnNormGauss{T}, x::Real) where {T<:Real}
-    x_T = T(x)
-    return (x_T - g.μ) / g.σ
-end
-
-"""
-    _from_scaled_coord(g::UnNormGauss, x̂::Real)
-
-Convert scaled coordinate `x̂` back to absolute coordinate: `g.μ + g.σ * x̂`
-"""
-function _from_scaled_coord(g::UnNormGauss{T}, x̂::Real) where {T<:Real}
-    x̂_T = T(x̂)
-    return g.μ + g.σ * x̂_T
+    return exp(-((x_T - g.μ) / g.σ)^2 / 2) / g.σ
 end
 
 """
@@ -171,7 +153,7 @@ The function uses precomputed normalization and tail parameters stored within th
 It switches between the Gaussian core and the power-law tail based on the value of `x` relative to the transition point defined by `α`.
 """
 function Distributions.pdf(d::CrystalBall{T}, x::Real) where {T<:Real}
-    x > d.tail.x0 && return d.norm_const * _value(d.gauss, x) / d.gauss.σ
+    x > d.tail.x0 && return d.norm_const * _value(d.gauss, x)
 
     x̂ = _scaled_coord(d.gauss, x)
     x̂0 = _scaled_coord(d.gauss, d.tail.x0)  # = -α
@@ -300,4 +282,26 @@ function _gaussian_quantile(g::UnNormGauss{T}, arg_erfinv::Real) where {T<:Real}
     arg_erfinv_T = T(arg_erfinv)
     x̂ = sqrt(T(2)) * erfinv(arg_erfinv_T)
     return _from_scaled_coord(g, x̂)
+end
+
+
+
+"""
+    _scaled_coord(g::UnNormGauss, x::Real)
+
+Convert absolute coordinate `x` to scaled coordinate: `(x - g.μ) / g.σ`
+"""
+function _scaled_coord(g::UnNormGauss{T}, x::Real) where {T<:Real}
+    x_T = T(x)
+    return (x_T - g.μ) / g.σ
+end
+
+"""
+    _from_scaled_coord(g::UnNormGauss, x̂::Real)
+
+Convert scaled coordinate `x̂` back to absolute coordinate: `g.μ + g.σ * x̂`
+"""
+function _from_scaled_coord(g::UnNormGauss{T}, x̂::Real) where {T<:Real}
+    x̂_T = T(x̂)
+    return g.μ + g.σ * x̂_T
 end

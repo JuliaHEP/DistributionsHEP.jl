@@ -103,7 +103,7 @@ function Distributions.pdf(d::DoubleCrystalBall{T}, x::Real) where {T<:Real}
     end
     # Gaussian core
     if x <= d.right_tail.x0
-        return d.norm_const * _value(d.gauss, x) / d.gauss.σ
+        return d.norm_const * _value(d.gauss, x)
     end
     # Right power-law tail: using clean 4-parameter formulation (in scaled coordinates)
     x̂0R = _scaled_coord(d.gauss, d.right_tail.x0)  # = αR
