@@ -77,9 +77,6 @@ struct DoublesidedBifurcatedCrystalBall{T<:Real} <: ContinuousUnivariateDistribu
     left_tail::CrystalBallTail{T}    # Left tail parameters (G(x0), N, L(x0), x0)
     right_tail::CrystalBallTail{T}   # Right tail parameters (G(x0), N, L(x0), x0)
     norm_const::T  # Normalization constant N
-    p_xL::T        # CDF at left transition point
-    p_xR::T        # CDF at right transition point
-    p_mu::T        # CDF at mean μ
 
     function DoublesidedBifurcatedCrystalBall(μ::T, σ::T, ψ::T, αL::T, nL::T, αR::T, nR::T) where {T<:Real}
         _check_double_sided_bifurcated_crystal_ball_params(σ, αL, nL, αR, nR)
@@ -102,19 +99,33 @@ struct DoublesidedBifurcatedCrystalBall{T<:Real} <: ContinuousUnivariateDistribu
         left_tail = CrystalBallTail(BifGauss, nL, xL)
         right_tail = CrystalBallTail(BifGauss, nR, xR)
 
-        # Calculate normalization constant
-        norm_const_left = _norm_const(left_tail)
-        norm_const_right = -_norm_const(right_tail)  # Negative for right tail
-        norm_const_core = cdf(BifGauss, xR) - cdf(BifGauss, xL)
+        # Calculate normalization constant using _integral
+        left_tail_contribution = _integral(left_tail, left_tail.x0)
+        right_tail_contribution = -_integral(right_tail, right_tail.x0)  # Right tail has negative L_x0, so negate
+        # Integral from xL to xR = cdf(BifGauss, xR) - cdf(BifGauss, xL)
+        core_contribution = cdf(BifGauss, xR) - cdf(BifGauss, xL)
+        N = one(T) / (left_tail_contribution + right_tail_contribution + core_contribution)
 
-        norm_const = one(T) / (norm_const_left + norm_const_right + norm_const_core)
-
-        p_xL = norm_const * norm_const_left
-        p_xR = norm_const * (norm_const_left + norm_const_core)
-        p_mu = norm_const * (norm_const_left + σL / (2 * σ) - cdf(BifGauss, xL))
-
-        new{T}(BifGauss, left_tail, right_tail, norm_const, p_xL, p_xR, p_mu)
+        new{T}(BifGauss, left_tail, right_tail, N)
     end
+end
+
+"""
+    _compute_transition_cdf_values(d::DoublesidedBifurcatedCrystalBall)
+
+Compute the CDF values at the two transition points (left and right) of the Double-sided Bifurcated Crystal Ball distribution.
+
+Returns a tuple `(cdf_at_xL, cdf_at_xR)` where:
+- `cdf_at_xL` is the CDF value at the left transition point (x = μ - αL * σL)
+- `cdf_at_xR` is the CDF value at the right transition point (x = μ + αR * σR)
+"""
+function _compute_transition_cdf_values(d::DoublesidedBifurcatedCrystalBall{T}) where {T<:Real}
+    cdf_at_xL = d.norm_const * _integral(d.left_tail, d.left_tail.x0)
+    # Integral from xL to xR = cdf(BifGauss, xR) - cdf(BifGauss, xL)
+    core_contribution = cdf(d.BifGauss, d.right_tail.x0) - cdf(d.BifGauss, d.left_tail.x0)
+    cdf_at_xR = cdf_at_xL + d.norm_const * core_contribution
+
+    return cdf_at_xL, cdf_at_xR
 end
 
 # Convenience constructors
@@ -123,55 +134,43 @@ DoublesidedBifurcatedCrystalBall(μ::Real, σ::Real, ψ::Real, αL::Real, nL::Re
 DoublesidedBifurcatedCrystalBall(μ::Integer, σ::Integer, ψ::Integer, αL::Integer, nL::Integer, αR::Integer, nR::Integer) =
     DoublesidedBifurcatedCrystalBall(float(μ), float(σ), float(ψ), float(αL), float(nL), float(αR), float(nR))
 
-"""
-    pdf(d::DoublesidedBifurcatedCrystalBall, x::Real)
-
-Compute the probability density function (PDF) of the Double-sided Bifurcated Crystal Ball distribution `d` at point `x`.
-
-The function switches between the left power-law tail, the bifurcated Gaussian core, and the right power-law tail
-based on the value of `x` relative to the transition points xL and xR.
-"""
 function Distributions.pdf(d::DoublesidedBifurcatedCrystalBall{T}, x::Real) where {T<:Real}
-    # left tail: using clean 4-parameter formulation
-    x < d.left_tail.x0 && return d.norm_const * _value(d.left_tail, x - d.left_tail.x0)
-    # core
-    x >= d.left_tail.x0 && x <= d.right_tail.x0 && return d.norm_const * pdf(d.BifGauss, x)
-    # right tail: using clean 4-parameter formulation
-    return d.norm_const * _value(d.right_tail, x - d.right_tail.x0)
+    # Left power-law tail
+    if x < d.left_tail.x0
+        offset = x - d.left_tail.x0
+        return d.norm_const * _value(d.left_tail, offset)
+    end
+    # Bifurcated Gaussian core
+    if x <= d.right_tail.x0
+        return d.norm_const * pdf(d.BifGauss, x)
+    end
+    # Right power-law tail
+    offset = x - d.right_tail.x0
+    return d.norm_const * _value(d.right_tail, offset)
 end
 
-"""
-    cdf(d::DoublesidedBifurcatedCrystalBall, x::Real)
-
-Compute the cumulative distribution function (CDF) of the Double-sided Bifurcated Crystal Ball distribution `d` at point `x`.
-
-The CDF is calculated by integrating the PDF. This implementation handles the integral of the power-law tails
-and the bifurcated Gaussian core separately, ensuring continuity at the transition points.
-"""
 function Distributions.cdf(d::DoublesidedBifurcatedCrystalBall{T}, x::Real) where {T<:Real}
-    const_left = _norm_const(d.left_tail)
-    const_right = -_norm_const(d.right_tail)
+    cdf_at_xL, cdf_at_xR = _compute_transition_cdf_values(d)
 
-    if x < d.left_tail.x0
-        # Left tail: using clean 4-parameter formulation
-        return d.norm_const * const_left * ((d.left_tail.N - d.left_tail.L_x0 * (x - d.left_tail.x0)) / d.left_tail.N)^(1 - d.left_tail.N)
-    elseif x >= d.left_tail.x0 && x <= d.right_tail.x0
-        return d.p_xL + d.norm_const * (cdf(d.BifGauss, x) - cdf(d.BifGauss, d.left_tail.x0))
+    if x <= d.left_tail.x0
+        # Left power-law tail
+        return d.norm_const * _integral(d.left_tail, x)
+    elseif x >= d.right_tail.x0
+        # Right power-law tail
+        # For right tail, _integral(right_tail, x) = -∫[x, +∞] and _integral(right_tail, x0R) = -∫[x0R, +∞]
+        # CDF(x) = CDF(x0R) + ∫[x0R, x] = CDF(x0R) + (∫[x0R, +∞] - ∫[x, +∞])
+        # = CDF(x0R) + (_integral(right_tail, x) - _integral(right_tail, x0R))
+        integral_at_x = _integral(d.right_tail, x)
+        integral_at_x0R = _integral(d.right_tail, d.right_tail.x0)
+        return cdf_at_xR + d.norm_const * (integral_at_x - integral_at_x0R)
     else
-        # Right tail: using clean 4-parameter formulation
-        return d.p_xR + d.norm_const * (-const_right * ((d.right_tail.N - d.right_tail.L_x0 * (x - d.right_tail.x0)) / d.right_tail.N)^(1 - d.right_tail.N) + const_right)
+        # Bifurcated Gaussian core
+        # Integral from xL to x = cdf(BifGauss, x) - cdf(BifGauss, xL)
+        core_contribution = cdf(d.BifGauss, x) - cdf(d.BifGauss, d.left_tail.x0)
+        return cdf_at_xL + d.norm_const * core_contribution
     end
 end
 
-"""
-    quantile(d::DoublesidedBifurcatedCrystalBall, p::Real)
-
-Compute the quantile (inverse CDF) of the Double-sided Bifurcated Crystal Ball distribution `d` for a given probability `p`.
-
-The function determines if the probability `p` falls into the left power-law tail, the left side of the core,
-the right side of the core, or the right power-law tail, and then inverts the corresponding CDF segment.
-Requires `SpecialFunctions.erfinv` to be available.
-"""
 function Distributions.quantile(d::DoublesidedBifurcatedCrystalBall{T}, p::Real) where {T<:Real}
     if p < zero(T) || p > one(T)
         throw(DomainError(p, "Probability p must be in [0,1]."))
@@ -179,19 +178,25 @@ function Distributions.quantile(d::DoublesidedBifurcatedCrystalBall{T}, p::Real)
     p == zero(T) && return T(-Inf)
     p == one(T) && return T(Inf)
 
-    const_left = _norm_const(d.left_tail)
-    const_right = -_norm_const(d.right_tail)
+    cdf_at_xL, cdf_at_xR = _compute_transition_cdf_values(d)
 
-    if p < d.p_xL
-        # Quantile is in the left power-law tail: using clean 4-parameter formulation
-        return d.left_tail.x0 + (d.left_tail.N / d.left_tail.L_x0) * (1 - (1 / const_left * p / d.norm_const)^(1 / (1 - d.left_tail.N)))
-    elseif p >= d.p_xL && p <= d.p_mu
-        return d.BifGauss.μ + d.BifGauss.σL * sqrt(T(2)) * erfinv((2 * d.BifGauss.σ / d.BifGauss.σL) * (p / d.norm_const - const_left + cdf(d.BifGauss, d.left_tail.x0)) - 1)
-    elseif p > d.p_mu && p <= d.p_xR
-        return d.BifGauss.μ + d.BifGauss.σR * sqrt(T(2)) * erfinv((2 * d.BifGauss.σ / d.BifGauss.σR) * (p / d.norm_const - const_left + cdf(d.BifGauss, d.left_tail.x0) - (d.BifGauss.σL / (2 * d.BifGauss.σ))))
+    if p <= cdf_at_xL
+        # Left power-law tail
+        tail_integral = p / d.norm_const
+        return _integral_inversion(d.left_tail, tail_integral)
+    elseif p >= cdf_at_xR
+        # Right power-law tail
+        # For right tail: CDF(x) = CDF(x0R) + N * (_integral(right_tail, x) - _integral(right_tail, x0R))
+        # So: _integral(right_tail, x) = (p - cdf_at_xR) / N + _integral(right_tail, x0R)
+        integral_at_x0R = _integral(d.right_tail, d.right_tail.x0)
+        tail_integral = (p - cdf_at_xR) / d.norm_const + integral_at_x0R
+        return _integral_inversion(d.right_tail, tail_integral)
     else
-        # Quantile is in the right power-law tail: using clean 4-parameter formulation
-        return d.right_tail.x0 + (d.right_tail.N / d.right_tail.L_x0) * (1 - (-1 / const_right * ((p - d.p_xR) / d.norm_const - const_right))^(1 / (1 - d.right_tail.N)))
+        # Bifurcated Gaussian core
+        # p = cdf_at_xL + N * (cdf(BifGauss, x) - cdf(BifGauss, xL))
+        # So: cdf(BifGauss, x) = (p - cdf_at_xL) / N + cdf(BifGauss, xL)
+        target_cdf = (p - cdf_at_xL) / d.norm_const + cdf(d.BifGauss, d.left_tail.x0)
+        return quantile(d.BifGauss, target_cdf)
     end
 end
 
