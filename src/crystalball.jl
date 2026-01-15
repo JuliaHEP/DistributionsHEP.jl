@@ -29,6 +29,15 @@ function _value(g::UnNormGauss{T}, x::Real) where {T<:Real}
     return exp(-((x_T - g.μ) / g.σ)^2 / 2) / g.σ
 end
 
+
+"""
+    _gaussian_half_norm_const(::Type{T})
+
+Return the Gaussian normalization constant: `sqrt(π/2)` for type `T`.
+"""
+_gaussian_half_norm_const(::Type{T}) where {T<:Real} = sqrt(T(π) / T(2))
+
+
 """
     _integral(g::UnNormGauss, a)
 
@@ -42,7 +51,7 @@ Returns the integral value.
 function _integral(g::UnNormGauss{T}, a::Real) where {T<:Real}
     a_T = T(a)
     x̂ = (a_T - g.μ) / g.σ
-    return _gaussian_norm_const(T) * (one(T) + erf(x̂ / sqrt(T(2))))
+    return _gaussian_half_norm_const(T) * (one(T) + erf(x̂ / sqrt(T(2))))
 end
 
 """
@@ -54,7 +63,7 @@ Returns the value of `a` (in absolute coordinates).
 """
 function _integral_inversion(g::UnNormGauss{T}, integral::Real) where {T<:Real}
     integral_T = T(integral)
-    norm_const = _gaussian_norm_const(T)
+    norm_const = _gaussian_half_norm_const(T)
 
     # Solve: norm_const * (1 + erf((a - μ) / (σ * sqrt(2)))) = integral
     # Rearranging: erf((a - μ) / (σ * sqrt(2))) = (integral / norm_const) - 1
@@ -231,15 +240,6 @@ Distributions.scale(d::CrystalBall) = d.gauss.σ
 
 
 #  to be removed once the refactoring is complete
-
-
-"""
-    _gaussian_norm_const(::Type{T})
-
-Return the Gaussian normalization constant: `sqrt(π/2)` for type `T`.
-"""
-_gaussian_norm_const(::Type{T}) where {T<:Real} = sqrt(T(π) / T(2))
-
 """
     _erf_scaled(g::UnNormGauss, x̂::Real)
 
@@ -265,7 +265,7 @@ New code should use `_integral` instead.
 function _gaussian_cdf_integral(g::UnNormGauss{T}, x̂1::Real, x̂0::Real) where {T<:Real}
     x̂1_T = T(x̂1)
     x̂0_T = T(x̂0)
-    return _gaussian_norm_const(T) * (_erf_scaled(g, x̂1_T) - _erf_scaled(g, x̂0_T))
+    return _gaussian_half_norm_const(T) * (_erf_scaled(g, x̂1_T) - _erf_scaled(g, x̂0_T))
 end
 
 """
