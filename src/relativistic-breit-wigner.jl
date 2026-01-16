@@ -53,11 +53,12 @@ function Distributions.pdf(r::RelativisticBreitWigner{T}, x::Real) where {T <: R
     if x < zero(T)
         zero(T) # PDF is zero for negative values
     else
-        M, Γ = r.M, r.Γ
+        (; M, Γ) = r
         γ = sqrt(M^2 * (M^2 + Γ^2))
-        k = (T(2)*sqrt(T(2)) * M * Γ * γ)/(π * sqrt(M^2 + γ))
-        dom = (x^2 - M^2)^2 + (M^2 * Γ^2)
-        k/dom
+        normalization = (T(2)*sqrt(T(2)) * M * Γ * γ)/(π * sqrt(M^2 + γ))
+        Msq_minus_xsq = (M-x)*(M+x)
+        denominator = Msq_minus_xsq^2 + (M^2 * Γ^2)
+        normalization/denominator
     end
 end
 
