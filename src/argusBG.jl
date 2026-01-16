@@ -1,27 +1,14 @@
 """
     StandardArgusBG <: ContinuousUnivariateDistribution
 
-A continuous univariate distribution based on the ARGUS shape defined on the standard interval `[0, 1]`.
+Internal type representing the standard ARGUS distribution on the interval `[0, 1]`.
 
-# Constructor
-```julia
-StandardArgusBG(c, p)
-```
-
-See also [`ArgusBG(c, p, a, b)`](@ref) for an ARGUS distribution transformed to a custom interval.
+This is the base distribution used internally by [`ArgusBG`](@ref) to create ARGUS distributions
+on arbitrary intervals `[a, b]` via linear transformation.
 
 # Arguments
 - `c`: Shape parameter (must be negative)
 - `p`: Power parameter (must be ≥ -1)
-
-# Examples
-```julia
-# Standard ARGUS distribution
-d = StandardArgusBG(-2.0, 0.5)
-
-# Different power parameter
-d = StandardArgusBG(-1.5, 1.0)
-```
 """
 struct StandardArgusBG{T <: Real} <: ContinuousUnivariateDistribution
     c::T
@@ -38,6 +25,16 @@ end
 
 Create an ARGUS distribution on the interval `[a, b]` by linearly transforming
 the standard ARGUS distribution.
+
+The probability density function on the interval `[a, b]` is:
+````math
+f(x; c, p, a, b) = \\frac{1}{b - a} f_{\\text{std}}\\left(\\frac{x - a}{b - a}; c, p\\right), \\quad x \\in [a, b]
+````
+where ``f_{\\text{std}}(x; c, p)`` is the standard ARGUS PDF on `[0, 1]`:
+````math
+f_{\\text{std}}(x; c, p) = \\frac{x (1 - x^2)^p \\exp\\left[c (1 - x^2)\\right]}{\\mathcal{N}}, \\quad x \\in [0, 1]
+````
+where ``\\mathcal{N}`` is the normalization constant ensuring ``\\int_0^1 f_{\\text{std}}(x) dx = 1``.
 
 # Arguments
 - `c`: Shape parameter (must be negative)
