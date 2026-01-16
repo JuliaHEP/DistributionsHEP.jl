@@ -9,10 +9,9 @@ Breit-Wigner distribution.
 
 The probability density function (PDF) is defined as:
 ````math
-    f(x; M, Γ) = \\frac{k / [ (x^2 - M^2)^2 + M^2 Γ^2 ]}
-
-    where     k = \\frac{2 \\sqrt{2} M Γ γ}{π \\sqrt{M^2 + γ}} and γ = \\sqrt{M^2 (M^2 + Γ^2)}
+f(x; M, Γ) = \\frac{k}{(x^2 - M^2)^2 + M^2 Γ^2}
 ````
+where ``k = \\frac{2 \\sqrt{2} M Γ γ}{π \\sqrt{M^2 + γ}}`` and ``γ = \\sqrt{M^2 (M^2 + Γ^2)}``.
 
 #Arguments
 - "M" : A real-valued location parameter that shifts the center of the distribution.
