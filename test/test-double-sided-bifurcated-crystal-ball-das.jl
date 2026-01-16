@@ -17,14 +17,14 @@ function check_quantile_accuracy(d, ps; atol = 1e-8)
 end
 
 # Test distribution with σ = 1 (standard case)
-d = DasFunction(0.0, 1.0, 0.25, 0.5, 1.25, 0.75)  # μ, σ, ψ, αL, nL, αR
+d = DoubleSidedBifurcatedCrystalBallDas(0.0, 1.0, 0.25, 0.5, 1.25, 0.75)  # μ, σ, ψ, αL, nL, αR
 
-@testset "DasFunction Distribution" verbose=true begin
+@testset "DoubleSidedBifurcatedCrystalBallDas Distribution" verbose=true begin
 @testset "Parameter validation" begin
-    @test_throws ErrorException DasFunction(0.0, -1.0, 0.25, 0.5, 1.25, 0.75)  # negative σ
-    @test_throws ErrorException DasFunction(0.0, 1.0, 0.25, -0.5, 1.25, 0.75)  # negative αL
-    @test_throws ErrorException DasFunction(0.0, 1.0, 0.25, 0.5, -1.25, 0.75)  # negative nL
-    @test_throws ErrorException DasFunction(0.0, 1.0, 0.25, 0.5, 1.25, -0.75)  # negative αR
+    @test_throws ErrorException DoubleSidedBifurcatedCrystalBallDas(0.0, -1.0, 0.25, 0.5, 1.25, 0.75)  # negative σ
+    @test_throws ErrorException DoubleSidedBifurcatedCrystalBallDas(0.0, 1.0, 0.25, -0.5, 1.25, 0.75)  # negative αL
+    @test_throws ErrorException DoubleSidedBifurcatedCrystalBallDas(0.0, 1.0, 0.25, 0.5, -1.25, 0.75)  # negative nL
+    @test_throws ErrorException DoubleSidedBifurcatedCrystalBallDas(0.0, 1.0, 0.25, 0.5, 1.25, -0.75)  # negative αR
 end
 
 @testset "PDF properties" begin
@@ -36,11 +36,11 @@ end
     end
 
     # PDF should be continuous at transition points
-    pdf_x_left_merge = d.xL
+    pdf_x_left_merge = d.left_tail.x0
     pdf_value_left1 = pdf(d, pdf_x_left_merge - 1e-6)
     pdf_value_right1 = pdf(d, pdf_x_left_merge + 1e-6)
 
-    pdf_x_right_merge = d.xR
+    pdf_x_right_merge = d.right_tail.x0
     pdf_value_left2 = pdf(d, pdf_x_right_merge - 1e-6)
     pdf_value_right2 = pdf(d, pdf_x_right_merge + 1e-6)
     @test isapprox(pdf_value_left1, pdf_value_right1; atol = 1e-5)
@@ -62,18 +62,18 @@ end
 
     # CDF should approach 0 and 1 at extremes
     @test cdf(d, -1000.0) < 0.1  # with das, normalization is dominated by exponential right tail
-    @test cdf(d, d.μ + 100.0 * d.σ) > 0.99  # Should be very close to 1
+    @test cdf(d, d.BifGauss.μ + 100.0 * d.BifGauss.σ) > 0.99  # Should be very close to 1
 
     # CDF should be continuous at transition point
-    x_left_merge = d.xL
+    x_left_merge = d.left_tail.x0
     cdf_value_left1 = cdf(d, x_left_merge - 1e-6)
     cdf_value_right1 = cdf(d, x_left_merge + 1e-6)
 
-    x_mu = d.μ
+    x_mu = d.BifGauss.μ
     cdf_value_left = cdf(d, x_mu - 1e-6)
     cdf_value_right = cdf(d, x_mu + 1e-6)
 
-    x_right_merge = d.xR
+    x_right_merge = d.right_tail.x0
     cdf_value_left2 = cdf(d, x_right_merge - 1e-6)
     cdf_value_right2 = cdf(d, x_right_merge + 1e-6)
     @test isapprox(cdf_value_left1, cdf_value_right1; atol = 1e-5)
@@ -113,7 +113,7 @@ end
     ps = [0.01, 0.1, 0.5, 0.9, 0.99, 0.999]
 
     for (μ, σ, ψ, αL, nL, αR) in test_cases
-        d_test = DasFunction(μ, σ, ψ, αL, nL, αR)
+        d_test = DoubleSidedBifurcatedCrystalBallDas(μ, σ, ψ, αL, nL, αR)
 
         # Test quantile accuracy
         check_quantile_accuracy(d_test, ps)
@@ -130,11 +130,11 @@ end
     end
 end
 
-# Symmetry not tested as DasFunction is inherently asymmetric
+# Symmetry not tested as DoubleSidedBifurcatedCrystalBallDas is inherently asymmetric
 
 @testset "Type stability" begin
-    d_float64 = DasFunction(0.0, 1.0, 0.25, 0.5, 1.25, 0.75)
-    d_float32 = DasFunction(0.0f0, 1.0f0, 0.25f0, 0.5f0, 1.25f0, 0.75f0)
+    d_float64 = DoubleSidedBifurcatedCrystalBallDas(0.0, 1.0, 0.25, 0.5, 1.25, 0.75)
+    d_float32 = DoubleSidedBifurcatedCrystalBallDas(0.0f0, 1.0f0, 0.25f0, 0.5f0, 1.25f0, 0.75f0)
 
     @test pdf(d_float64, 0.0) isa Float64
     @test pdf(d_float32, 0.0f0) isa Float32
@@ -145,8 +145,8 @@ end
 end
 
 @testset "Support interface" begin
-    d_float64 = DoublesidedBifurcatedCrystalBall(0.0, 1.0, 0.25, 0.5, 1.25, 0.75, 1.5)
-    d_float32 = DoublesidedBifurcatedCrystalBall(0.0f0, 1.0f0, 0.25f0, 0.5f0, 1.25f0, 0.75f0, 1.5f0)
+    d_float64 = DoubleSidedBifurcatedCrystalBallDas(0.0, 1.0, 0.25, 0.5, 1.25, 0.75)
+    d_float32 = DoubleSidedBifurcatedCrystalBallDas(0.0f0, 1.0f0, 0.25f0, 0.5f0, 1.25f0, 0.75f0)
 
     @test maximum(d_float64) == Inf
     @test maximum(d_float32) == Inf32

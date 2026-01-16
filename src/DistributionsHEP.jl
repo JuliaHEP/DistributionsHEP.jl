@@ -35,7 +35,8 @@ include("bifurcated-gaussian.jl")
 export DoubleSidedBifurcatedCrystalBall
 include("double-sided-bifurcated-crystal-ball.jl")
 
-export DasFunction
-include("das-function.jl")
+export DoubleSidedBifurcatedCrystalBallDas
+include("exponential-tail.jl")
+include("double-sided-bifurcated-crystal-ball-das.jl")
 
 end

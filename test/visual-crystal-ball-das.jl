@@ -10,10 +10,10 @@ params = [
     (0.0, 0.5, 0.25, 0.5, 1.5, 3.0),
 ]
 
-x_range = -20:0.01:7
+x_range = -7:0.01:7
 
 pv = map(enumerate(params)) do (i, (μ, σ, ψ, αL, nL, αR))
-    d = DasFunction(μ, σ, ψ, αL, nL, αR)
+    d = DoubleSidedBifurcatedCrystalBallDas(μ, σ, ψ, αL, nL, αR)
     p1 = plot(
         x_range,
         x -> pdf(d, x),

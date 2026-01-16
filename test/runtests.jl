@@ -8,5 +8,5 @@ using Test
     include("test-secant.jl")
     include("test-bifurcated-gaussian.jl")
     include("test-double-sided-bifurcated-crystal-ball.jl")
-    include("test-das-function.jl")
+    include("test-double-sided-bifurcated-crystal-ball-das.jl")
 end
