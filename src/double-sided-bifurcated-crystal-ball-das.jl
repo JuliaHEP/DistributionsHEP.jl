@@ -6,24 +6,6 @@ function _check_double_sided_bifurcated_crystal_ball_das_params(σ::T, αL::T, n
     αR > zero(T) || error("αR (right transition point) must be positive.")
 end
 
-# Helper function logarithmic derivative
-#=function _log_derivative_bifurcated_gaussian(d::BifurcatedGaussian, x::T) where {T<:Real}
-    x <= d.μ && return -(x - d.μ) / (d.σL^2)
-    return -(x - d.μ) / (d.σR^2)
-end
-
-function CrystalBallTail(
-    BifGauss::BifurcatedGaussian{T},
-    n::T,
-    x0::T
-) where {T<:Real}
-    # N: Effective power (for bifurcated, N = sqrt(1 + n²))
-    N = sqrt(one(T) + n^2)
-    G_x0 = pdf(BifGauss, x0)
-    L_x0 = _log_derivative_bifurcated_gaussian(BifGauss, x0)
-    return CrystalBallTail(G_x0, N, L_x0, x0)
-end=#
-
 function ExponentialTail(
     BifGauss::BifurcatedGaussian{T},
     x0::T
@@ -32,8 +14,6 @@ function ExponentialTail(
     L_x0 = _log_derivative_bifurcated_gaussian(BifGauss, x0)
     return ExponentialTail(G_x0, L_x0, x0)
 end
-
-
 
 """
     DoubleSidedBifurcatedCrystalBallDas{T<:Real} <: ContinuousUnivariateDistribution
