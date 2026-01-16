@@ -71,35 +71,35 @@ end
 # Extracted from the continous distribution section of SciPy
 # https://github.com/scipy/scipy/blob/b1296b9b4393e251511fe8fdd3e58c22a1124899/scipy/stats/_continuous_distns.py#L12407C6-L12416C40
 function Distributions.cdf(r::RelativisticBreitWigner{T}, x::Real) where {T <: Real}
-    if x < zero(T)
-        zero(T)
-    else
-        let ρ = r.M/r.Γ, two = T(2)
-            C =  1/T(π) * √(two / (1 + √ (1 + 1/ρ^2) ))
-            z1 = sqrt(-1 + im / ρ)
-            z2 = sqrt(-ρ * (ρ + im))
-            term = z1 * atan(x / z2)
-            result = abs(two * C * imag(term))
-            return min(result, one(T))
-        end
-    end
+    x < zero(T) && return zero(T)
+    # 
+    ρ = r.M/r.Γ
+    two = T(2)
+    C =  1/T(π) * √(two / (1 + √ (1 + 1/ρ^2) ))
+    z1 = sqrt(-1 + im / ρ)
+    z2 = sqrt(-ρ * (ρ + im))
+    term = z1 * atan(x / z2)
+    result = abs(two * C * imag(term))
+    return min(result, one(T))
 end
 
 # Parameters
-location(r::RelativisticBreitWigner) = r.M
-scale(r::RelativisticBreitWigner) = r.Γ
+Distributions.location(r::RelativisticBreitWigner) = r.M
+Distributions.scale(r::RelativisticBreitWigner) = r.Γ
 
-params(r::RelativisticBreitWigner) = (r.M, r.Γ)
+Distributions.params(r::RelativisticBreitWigner) = (r.M, r.Γ)
 @inline partype(r::RelativisticBreitWigner{T}) where {T<:Real} = T
 
 # Statistics
+mode(r::RelativisticBreitWigner) = r.M
+skewness(r::RelativisticBreitWigner{T}) where {T<:Real} = T(Inf)
+
+# given by an integral [x^k f(x) dx] in [0, Inf] -- probably possible to compute analytically
 mean(r::RelativisticBreitWigner{T}) where {T<:Real} = T(NaN)
 median(r::RelativisticBreitWigner) = r.M
-mode(r::RelativisticBreitWigner) = r.M
-
 var(r::RelativisticBreitWigner{T}) where {T<:Real} = T(NaN)
-skewness(r::RelativisticBreitWigner{T}) where {T<:Real} = T(NaN)
-kurtosis(r::RelativisticBreitWigner{T}) where {T<:Real} = T(NaN)
+kurtosis(r::RelativisticBreitWigner{T}) where {T<:Real} = T(0)
+
 
 Distributions.minimum(r::RelativisticBreitWigner{T}) where {T <: Real} = T(-Inf)
 Distributions.maximum(r::RelativisticBreitWigner{T}) where {T <: Real} = T(Inf)
