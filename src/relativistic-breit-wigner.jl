@@ -31,58 +31,68 @@ plot(x, y, xlabel="x", ylabel="PDF")
 
 """
 
-struct RelativisticBreitWigner{T <: Real} <: ContinuousUnivariateDistribution 
+struct RelativisticBreitWigner{T<:Real} <: ContinuousUnivariateDistribution
     M::T # Location parameter (peak position)
     Γ::T # Scale parameter (width)
 
     # Constructor with input checks for positivity
-    function RelativisticBreitWigner(M::T, Γ::T) where {T <: Real}
+    function RelativisticBreitWigner(M::T, Γ::T) where {T<:Real}
         M > zero(T) || error("M must be positive")
         Γ > zero(T) || error("Γ must be positive")
         new{T}(M, Γ)
     end
-end 
+end
 
 # Including the type stability (Flexible to all types of inputs)
-RelativisticBreitWigner(M::Real , Γ::Real) = RelativisticBreitWigner(promote(M, Γ)...)
+RelativisticBreitWigner(M::Real, Γ::Real) = RelativisticBreitWigner(promote(M, Γ)...)
 RelativisticBreitWigner(M::Integer, Γ::Integer) = RelativisticBreitWigner(float(M), float(Γ))
 
 # Probability Density Function (PDF) 
-# The Wikipedia reference is https://en.wikipedia.org/wiki/Relativistic_Breit–Wigner_distribution
-function Distributions.pdf(r::RelativisticBreitWigner{T}, x::Real) where {T <: Real}
-    if x < zero(T)
-        zero(T) # PDF is zero for negative values
-    else
-        (; M, Γ) = r
-        γ = sqrt(M^2 * (M^2 + Γ^2))
-        normalization = (T(2)*sqrt(T(2)) * M * Γ * γ)/(π * sqrt(M^2 + γ))
-        Msq_minus_xsq = (M-x)*(M+x)
-        denominator = Msq_minus_xsq^2 + (M^2 * Γ^2)
-        normalization/denominator
-    end
+# Defined on the full real line (-∞, +∞)
+# See docs/RelativisticBreitWignerMath.md for derivation
+function Distributions.pdf(r::RelativisticBreitWigner{T}, x::Real) where {T<:Real}
+    (; M, Γ) = r
+    # Define constants: A = M², B = MΓ
+    A = M^2
+    B = M * Γ
+    r_val = sqrt(A^2 + B^2)
+    v = sqrt((r_val - A) / T(2))
+
+    # Normalized PDF: f(x) = (2rv/π) / ((M² - x²)² + M²Γ²)
+    # where the denominator is (A - x²)² + B²
+    normalization = T(2) * r_val * v / π
+    denominator = (A - x^2)^2 + B^2
+    normalization / denominator
 end
 
 # logarithm of the PDF
-function Distributions.logpdf(r::RelativisticBreitWigner{T}, x::Real) where {T <: Real}
-    return log(pdf(r,x))
+function Distributions.logpdf(r::RelativisticBreitWigner{T}, x::Real) where {T<:Real}
+    return log(pdf(r, x))
 end
 
 # Cumulative Distribution Function (CDF)
-# Extracted from the continous distribution section of SciPy
-# https://github.com/scipy/scipy/blob/b1296b9b4393e251511fe8fdd3e58c22a1124899/scipy/stats/_continuous_distns.py#L12407C6-L12416C40
-function Distributions.cdf(r::RelativisticBreitWigner{T}, x::Real) where {T <: Real}
-    if x < zero(T)
-        zero(T)
-    else
-        let ρ = r.M/r.Γ, two = T(2)
-            C =  1/T(π) * √(two / (1 + √ (1 + 1/ρ^2) ))
-            z1 = sqrt(-1 + im / ρ)
-            z2 = sqrt(-ρ * (ρ + im))
-            term = z1 * atan(x / z2)
-            result = abs(two * C * imag(term))
-            return min(result, one(T))
-        end
-    end
+# Closed-form expression for constant width Γ
+# See docs/RelativisticBreitWignerMath.md for derivation
+function Distributions.cdf(r::RelativisticBreitWigner{T}, x::Real) where {T<:Real}
+    (; M, Γ) = r
+    # Define constants: A = M², B = MΓ
+    A = M^2
+    B = M * Γ
+    r_val = sqrt(A^2 + B^2)
+    u = sqrt((r_val + A) / T(2))
+    v = sqrt((r_val - A) / T(2))
+
+    # Closed-form CDF formula
+    # F(x) = 1/2 + (1/(2π)) * [arctan((x+u)/v) + arctan((x-u)/v)] 
+    #       + (v/(4πu)) * ln(((x+u)^2+v^2)/((x-u)^2+v^2))
+    term1 = T(1) / T(2)
+    term2 = (T(1) / (T(2) * π)) * (atan((x + u) / v) + atan((x - u) / v))
+    term3 = (v / (T(4) * π * u)) * log(((x + u)^2 + v^2) / ((x - u)^2 + v^2))
+
+    result = term1 + term2 + term3
+
+    # Ensure result is in [0, 1]
+    return clamp(result, zero(T), one(T))
 end
 
 # Parameters
@@ -101,7 +111,7 @@ var(r::RelativisticBreitWigner{T}) where {T<:Real} = T(NaN)
 skewness(r::RelativisticBreitWigner{T}) where {T<:Real} = T(NaN)
 kurtosis(r::RelativisticBreitWigner{T}) where {T<:Real} = T(NaN)
 
-Distributions.minimum(r::RelativisticBreitWigner{T}) where {T <: Real} = T(-Inf)
-Distributions.maximum(r::RelativisticBreitWigner{T}) where {T <: Real} = T(Inf)
+Distributions.minimum(r::RelativisticBreitWigner{T}) where {T<:Real} = T(-Inf)
+Distributions.maximum(r::RelativisticBreitWigner{T}) where {T<:Real} = T(Inf)
 
 
