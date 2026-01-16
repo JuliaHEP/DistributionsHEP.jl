@@ -39,4 +39,7 @@ export DoubleSidedBifurcatedCrystalBallDas
 include("exponential-tail.jl")
 include("double-sided-bifurcated-crystal-ball-das.jl")
 
+export RelativisticBreitWigner
+include("relativistic-breit-wigner.jl")
+
 end

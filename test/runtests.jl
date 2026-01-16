@@ -9,4 +9,5 @@ using Test
     include("test-bifurcated-gaussian.jl")
     include("test-double-sided-bifurcated-crystal-ball.jl")
     include("test-double-sided-bifurcated-crystal-ball-das.jl")
+    include("test-relativistic-breit-wigner.jl")
 end
