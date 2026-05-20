@@ -79,6 +79,9 @@ function Distributions.pdf(d::CrystalBall{T}, x::Real) where {T<:Real}
     return d.norm_const * _value(d.tail, offset)
 end
 
+Distributions.logpdf(d::CrystalBall, x::Real) =
+    log(pdf(d, x))
+
 function Distributions.cdf(d::CrystalBall{T}, x::Real) where {T<:Real}
     # Left tail
     x <= d.tail.x0 && return d.norm_const * _integral(d.tail, x)
@@ -116,4 +119,3 @@ Distributions.minimum(d::CrystalBall{T}) where {T<:Real} = T(-Inf)
 # Distributions.jl interface methods
 Distributions.location(d::CrystalBall) = d.gauss.μ
 Distributions.scale(d::CrystalBall) = d.gauss.σ
-

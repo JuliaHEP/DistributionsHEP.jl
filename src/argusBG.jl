@@ -74,6 +74,9 @@ Distributions.maximum(d::StandardArgusBG{T}) where {T <: Real} = T(1)
 Distributions.pdf(d::StandardArgusBG, x::Real) =
     (x <= 0 || x >= 1) ? zero(x) : f_argus_std(x, d.c, d.p) / d.integral
 
+Distributions.logpdf(d::StandardArgusBG, x::Real) =
+    log(pdf(d, x))
+
 Distributions.cdf(d::StandardArgusBG, x::Real) =
     x <= 0 ? zero(x) : x >= 1 ? one(x) : (F_argus_std(x, d.c, d.p) - F_argus_std(0, d.c, d.p)) / d.integral
 

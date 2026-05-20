@@ -64,6 +64,9 @@ Distributions.maximum(d::StandardChebyshev) = 1.0
 Distributions.pdf(d::StandardChebyshev, x::Real) =
     d.polynomial(x) / d.integral
 
+Distributions.logpdf(d::StandardChebyshev, x::Real) =
+    log(pdf(d, x))
+
 Distributions.cdf(d::StandardChebyshev, x::Real) =
     integrate(d.polynomial, -1.0, x) / d.integral
 

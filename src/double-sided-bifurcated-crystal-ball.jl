@@ -147,6 +147,9 @@ function Distributions.pdf(d::DoubleSidedBifurcatedCrystalBall{T}, x::Real) wher
     return d.norm_const * _value(d.right_tail, offset)
 end
 
+Distributions.logpdf(d::DoubleSidedBifurcatedCrystalBall, x::Real) =
+    log(pdf(d, x))
+
 function Distributions.cdf(d::DoubleSidedBifurcatedCrystalBall{T}, x::Real) where {T<:Real}
     cdf_at_xL, cdf_at_xR = _compute_transition_cdf_values(d)
 

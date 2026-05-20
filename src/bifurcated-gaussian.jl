@@ -88,6 +88,9 @@ function Distributions.pdf(d::BifurcatedGaussian{T}, x::Real) where {T<:Real}
     return one(T) / (sqrt(T(2π)) * d.σ) * exp(-T(0.5) * ((x - d.μ) / d.σR)^2)
 end
 
+Distributions.logpdf(d::BifurcatedGaussian, x::Real) =
+    log(pdf(d, x))
+
 function Distributions.cdf(d::BifurcatedGaussian{T}, x::Real) where {T<:Real}
 
     # CDF values at transition point (from mathematical derivation)
