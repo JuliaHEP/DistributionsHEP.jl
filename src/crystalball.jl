@@ -68,6 +68,9 @@ struct CrystalBall{T<:Real} <: ContinuousUnivariateDistribution
     end
 end
 
+# Convenience constructor
+CrystalBall(μ::Real, σ::Real, α::Real, n::Real) = CrystalBall(promote(μ, σ, α, n)...)
+
 function Distributions.pdf(d::CrystalBall{T}, x::Real) where {T<:Real}
     x > d.tail.x0 && return d.norm_const * pdf(d.gauss, x)
 
@@ -113,5 +116,4 @@ Distributions.minimum(d::CrystalBall{T}) where {T<:Real} = T(-Inf)
 # Distributions.jl interface methods
 Distributions.location(d::CrystalBall) = d.gauss.μ
 Distributions.scale(d::CrystalBall) = d.gauss.σ
-
 

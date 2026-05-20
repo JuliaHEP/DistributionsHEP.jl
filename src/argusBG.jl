@@ -20,6 +20,8 @@ struct StandardArgusBG{T <: Real} <: ContinuousUnivariateDistribution
     end
 end
 
+StandardArgusBG(c::Real, p::Real) = StandardArgusBG(promote(c, p)...)
+
 """
     ArgusBG(c, p, a, b)
 
@@ -51,8 +53,9 @@ d = ArgusBG(-2.0, 0.5, 0, 1)
 d = ArgusBG(-1.5, 1.0, 0, 10)
 ```
 """
-function ArgusBG(c::T, p = T(0.5), a = 0.0, b = 1.0) where {T <: Real}
-    return StandardArgusBG(c, p) * (b - a) + a
+function ArgusBG(c::Real, p::Real = 0.5, a::Real = 0.0, b::Real = 1.0)
+    ρ = StandardArgusBG(c, p)
+    return ρ * (b - a) + a
 end
 
 # Standardized ARGUS PDF on [0,1]

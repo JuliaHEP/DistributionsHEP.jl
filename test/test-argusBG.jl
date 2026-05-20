@@ -43,6 +43,18 @@ d_set = [
             @test minimum(d) == support(d).lb
             @test maximum(d) == support(d).ub
         end
+
+        d_mixed = ArgusBG(-2.0f0, 0.8, -1.0f0, 3.0)
+        @test partype(d_mixed) == Float64
+        @test minimum(d_mixed) == -1.0
+        @test maximum(d_mixed) == 3.0
+
+        d_float32_shape = ArgusBG(-2.0f0, 0.8f0, -1.0, 3.0)
+        @test partype(d_float32_shape.ρ) == Float32
+        @test partype(d_float32_shape) == Float64
+
+        d_integer_c = ArgusBG(-2)
+        @test partype(d_integer_c.ρ) == Float64
     end
 
     @testset "PDF properties" begin
@@ -94,5 +106,3 @@ d_set = [
         end
     end
 end
-
-
