@@ -132,13 +132,17 @@ d = DoubleCrystalBall(0.0, 1.0, 1.5, 2.0, 2.0, 3.0)
     @testset "Type stability" begin
         d_float64 = DoubleCrystalBall(0.0, 1.0, 1.5, 2.0, 2.0, 3.0)
         d_float32 = DoubleCrystalBall(0.0f0, 1.0f0, 1.5f0, 2.0f0, 2.0f0, 3.0f0)
+        d_mixed = DoubleCrystalBall(0.0f0, 1.0, 1.5, 2.0, 2.0, 3.0)
 
         @test pdf(d_float64, 0.0) isa Float64
         @test pdf(d_float32, 0.0f0) isa Float32
+        @test pdf(d_mixed, 0.0) isa Float64
         @test cdf(d_float64, 0.0) isa Float64
         @test cdf(d_float32, 0.0f0) isa Float32
+        @test cdf(d_mixed, 0.0) isa Float64
         @test quantile(d_float64, 0.5) isa Float64
         @test quantile(d_float32, 0.5f0) isa Float32
+        @test quantile(d_mixed, 0.5) isa Float64
     end
 
     @testset "Support interface" begin

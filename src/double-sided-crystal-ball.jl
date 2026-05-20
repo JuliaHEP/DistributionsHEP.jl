@@ -84,6 +84,10 @@ struct DoubleCrystalBall{T<:Real} <: ContinuousUnivariateDistribution
     end
 end
 
+# Convenience constructor
+DoubleCrystalBall(μ::Real, σ::Real, αL::Real, nL::Real, αR::Real, nR::Real) =
+    DoubleCrystalBall(promote(μ, σ, αL, nL, αR, nR)...)
+
 """
     _compute_transition_cdf_values(d::DoubleCrystalBall)
 

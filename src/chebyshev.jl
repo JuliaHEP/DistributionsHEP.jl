@@ -54,7 +54,7 @@ d = Chebyshev([1.0, 1.0], 0, 10)
 d = Chebyshev([4.0, 0.0, 1.0], -5, 5)
 ```
 """
-function Chebyshev(coeffs, a::T = -1.0, b::T = 1.0) where {T <: Real}
+function Chebyshev(coeffs, a::Real = -1.0, b::Real = 1.0)
     return StandardChebyshev(coeffs) * (b - a) / 2 + (a + b) / 2
 end
 
@@ -75,4 +75,3 @@ function Base.rand(rng::AbstractRNG, d::StandardChebyshev)
     end
     return x
 end
-
