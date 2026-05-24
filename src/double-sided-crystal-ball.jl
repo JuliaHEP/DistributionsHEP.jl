@@ -123,6 +123,9 @@ function Distributions.pdf(d::DoubleCrystalBall{T}, x::Real) where {T<:Real}
     return d.norm_const * _value(d.right_tail, offset)
 end
 
+Distributions.logpdf(d::DoubleCrystalBall, x::Real) =
+    log(pdf(d, x))
+
 function Distributions.cdf(d::DoubleCrystalBall{T}, x::Real) where {T<:Real}
     cdf_at_minus_alphaL, cdf_at_plus_alphaR = _compute_transition_cdf_values(d)
 

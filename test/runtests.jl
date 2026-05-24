@@ -10,4 +10,5 @@ using Test
     include("test-double-sided-bifurcated-crystal-ball.jl")
     include("test-double-sided-bifurcated-crystal-ball-das.jl")
     include("test-constructor-promotion.jl")
+    include("test-logpdf-interface.jl")
 end
