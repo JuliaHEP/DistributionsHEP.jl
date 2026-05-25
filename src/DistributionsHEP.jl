@@ -39,4 +39,7 @@ export DoubleSidedBifurcatedCrystalBallDas
 include("exponential-tail.jl")
 include("double-sided-bifurcated-crystal-ball-das.jl")
 
+export ExtendedMixtureModel, yields, total_yield, marginalize, extended_negative_log_likelihood
+include("extended-mixture-model.jl")
+
 end

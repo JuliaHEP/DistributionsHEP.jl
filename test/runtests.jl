@@ -11,4 +11,5 @@ using Test
     include("test-double-sided-bifurcated-crystal-ball-das.jl")
     include("test-constructor-promotion.jl")
     include("test-logpdf-interface.jl")
+    include("test-extended-mixture-model.jl")
 end
