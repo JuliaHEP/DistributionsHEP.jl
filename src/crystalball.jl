@@ -54,7 +54,7 @@ struct CrystalBall{T<:Real} <: ContinuousUnivariateDistribution
         x0 = μ - α * σ
         # Use pdf from Normal to get normalized G_x0 at transition point
         G_x0 = pdf(gauss, x0)
-        L_x0 = α
+        L_x0 = _log_derivative_normal(gauss, x0)
         tail = CrystalBallTail(G_x0, n, L_x0, x0)
 
         tail_contribution = _integral(tail, tail.x0)

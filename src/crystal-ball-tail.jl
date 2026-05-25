@@ -5,9 +5,11 @@
 struct CrystalBallTail{T<:Real}
     G_x0::T       # G(x0): Core PDF at transition point x0
     N::T          # Effective power
-    L_x0::T       # L(x0): Logarithmic derivative of core PDF at transition point x0
+    L_x0::T       # L(x0): d ln pdf / dx at transition point x0 (absolute coordinates)
     x0::T         # x0: Absolute transition point
 end
+
+_log_derivative_normal(d::Normal{T}, x::Real) where {T<:Real} = -(x - d.μ) / d.σ^2
 
 function _norm_const(tail::CrystalBallTail{T}) where {T<:Real}
     (; G_x0, N, L_x0) = tail

@@ -4,6 +4,8 @@ using Distributions
 using QuadGK
 using Test
 
+include("crystal-ball-test-helpers.jl")
+
 @testset "CrystalBall Distribution" verbose = true begin
 
     # Test distribution with σ = 1 (standard case)
@@ -98,6 +100,10 @@ using Test
                 @warn "PDF normalization failed for σ = $σ" numerical_integral
             end
             @test isapprox(numerical_integral, 1.0; atol=1e-6)
+
+            # C¹ matching at the tail join (guards σ-scaling regressions like #41)
+            test_pdf_derivative_continuous(d_test, d_test.tail.x0)
+            test_tail_log_derivative(d_test.tail, d_test.gauss)
         end
     end
 

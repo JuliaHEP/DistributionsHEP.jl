@@ -4,6 +4,8 @@ using Distributions
 using QuadGK
 using Test
 
+include("crystal-ball-test-helpers.jl")
+
 # Test distribution with σ = 1 (standard case)
 d = DoubleCrystalBall(0.0, 1.0, 1.5, 2.0, 2.0, 3.0)
 
@@ -114,6 +116,12 @@ d = DoubleCrystalBall(0.0, 1.0, 1.5, 2.0, 2.0, 3.0)
             # The PDF should integrate to 1 for all σ values
             numerical_integral = quadgk(x -> pdf(d_test, x), -Inf, Inf)[1]
             @test isapprox(numerical_integral, 1.0; atol=1e-6)
+
+            # C¹ matching at both tail joins (guards σ-scaling regressions like #41)
+            for tail in (d_test.left_tail, d_test.right_tail)
+                test_pdf_derivative_continuous(d_test, tail.x0)
+                test_tail_log_derivative(tail, d_test.gauss)
+            end
         end
     end
 
@@ -167,8 +175,13 @@ d = DoubleCrystalBall(0.0, 1.0, 1.5, 2.0, 2.0, 3.0)
 
         for (μ, σ, αL, nL, αR, nR) in test_cases
             d = DoubleCrystalBall(μ, σ, αL, nL, αR, nR)
-            p = params(d)
-            @test p == (μ, σ, αL, nL, αR, nR)
+            μ_p, σ_p, αL_p, nL_p, αR_p, nR_p = params(d)
+            @test μ_p == μ
+            @test σ_p == σ
+            @test isapprox(αL_p, αL)
+            @test nL_p == nL
+            @test isapprox(αR_p, αR)
+            @test nR_p == nR
         end
 
         # Test location and scale
