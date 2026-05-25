@@ -4,6 +4,8 @@ using Distributions
 using QuadGK
 using Test
 
+include("crystal-ball-test-helpers.jl")
+
 @testset "CrystalBall Distribution" verbose = true begin
 
     # Test distribution with σ = 1 (standard case)
@@ -28,14 +30,6 @@ using Test
         pdf_value_left = pdf(d, x_merge + 1e-5)  # just above the transition point
         pdf_value_right = pdf(d, x_merge - 1e-5) # just below the transition point
         @test isapprox(pdf_value_left, pdf_value_right; atol=1e-5)
-
-        # First derivative should be continuous at the transition point (regression for σ ≠ 1)
-        d_scaled = CrystalBall(0.0, 0.3, 1.6, 10.0)
-        x0 = d_scaled.tail.x0
-        h = 1e-7
-        deriv_left = (pdf(d_scaled, x0 - h) - pdf(d_scaled, x0 - 2h)) / h
-        deriv_right = (pdf(d_scaled, x0 + 2h) - pdf(d_scaled, x0 + h)) / h
-        @test isapprox(deriv_left, deriv_right; rtol=1e-5)
 
         # PDF should integrate to 1
         numerical_integral = quadgk(x -> pdf(d, x), -Inf, Inf)[1]
@@ -106,6 +100,10 @@ using Test
                 @warn "PDF normalization failed for σ = $σ" numerical_integral
             end
             @test isapprox(numerical_integral, 1.0; atol=1e-6)
+
+            # C¹ matching at the tail join (guards σ-scaling regressions like #41)
+            test_pdf_derivative_continuous(d_test, d_test.tail.x0)
+            test_tail_log_derivative(d_test.tail, d_test.gauss)
         end
     end
 
