@@ -121,7 +121,7 @@ $$
 The implementation uses a unified `CrystalBallTail` structure parameterized by:
 - `G_x0`: The core PDF value at the transition point
 - `N`: The power-law exponent
-- `L_x0`: The logarithmic derivative at the transition point ($\alpha$ for left tail, $-\alpha$ for right tail)
+- `L_x0`: The logarithmic derivative of the core PDF at the transition point in absolute coordinates ($\alpha/\sigma$ for a left tail on a Normal core, $-\alpha/\sigma$ for a right tail)
 - `x0`: The absolute transition point
 
 This approach simplifies the formulas and makes the implementation more general, allowing the same tail structure to work with different core distributions.

@@ -35,6 +35,15 @@ d = DoubleCrystalBall(0.0, 1.0, 1.5, 2.0, 2.0, 3.0)
         pdf_value_right = pdf(d, x_right_merge + 1e-6)
         @test isapprox(pdf_value_left, pdf_value_right; atol=1e-5)
 
+        # First derivative should be continuous at transition points (regression for σ ≠ 1)
+        d_scaled = DoubleCrystalBall(0.0, 0.3, 1.6, 10.0, 1.6, 10.0)
+        for x0 in (d_scaled.left_tail.x0, d_scaled.right_tail.x0)
+            h = 1e-7
+            deriv_left = (pdf(d_scaled, x0 - h) - pdf(d_scaled, x0 - 2h)) / h
+            deriv_right = (pdf(d_scaled, x0 + 2h) - pdf(d_scaled, x0 + h)) / h
+            @test isapprox(deriv_left, deriv_right; rtol=1e-5)
+        end
+
         # PDF should integrate to 1
         numerical_integral = quadgk(x -> pdf(d, x), -Inf, Inf)[1]
         @test isapprox(numerical_integral, 1.0; atol=1e-6)
@@ -167,8 +176,13 @@ d = DoubleCrystalBall(0.0, 1.0, 1.5, 2.0, 2.0, 3.0)
 
         for (μ, σ, αL, nL, αR, nR) in test_cases
             d = DoubleCrystalBall(μ, σ, αL, nL, αR, nR)
-            p = params(d)
-            @test p == (μ, σ, αL, nL, αR, nR)
+            μ_p, σ_p, αL_p, nL_p, αR_p, nR_p = params(d)
+            @test μ_p == μ
+            @test σ_p == σ
+            @test isapprox(αL_p, αL)
+            @test nL_p == nL
+            @test isapprox(αR_p, αR)
+            @test nR_p == nR
         end
 
         # Test location and scale

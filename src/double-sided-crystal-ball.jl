@@ -63,13 +63,13 @@ struct DoubleCrystalBall{T<:Real} <: ContinuousUnivariateDistribution
         x0L = μ - αL * σ
         # Use pdf from Normal to get normalized G_x0 at transition point
         G_x0L = pdf(gauss, x0L)
-        L_x0L = αL # log derivative is just equal to αL
+        L_x0L = _log_derivative_normal(gauss, x0L)
         left_tail = CrystalBallTail(G_x0L, nL, L_x0L, x0L)
 
         x0R = μ + αR * σ
         # Use pdf from Normal to get normalized G_x0 at transition point
         G_x0R = pdf(gauss, x0R)
-        L_x0R = -αR  # Negative as should be for rightward tail
+        L_x0R = _log_derivative_normal(gauss, x0R)
         right_tail = CrystalBallTail(G_x0R, nR, L_x0R, x0R)
 
         left_tail_contribution = _integral(left_tail, left_tail.x0)
@@ -190,9 +190,9 @@ Distributions.scale(d::DoubleCrystalBall) = d.gauss.σ
 Distributions.params(d::DoubleCrystalBall) = (
     d.gauss.μ,
     d.gauss.σ,
-    d.left_tail.L_x0,
+    (d.gauss.μ - d.left_tail.x0) / d.gauss.σ,
     d.left_tail.N,
-    -d.right_tail.L_x0,  # Negative as should be for rightward tail
-    d.right_tail.N
+    (d.right_tail.x0 - d.gauss.μ) / d.gauss.σ,
+    d.right_tail.N,
 )
 Distributions.partype(::DoubleCrystalBall{T}) where {T} = T
