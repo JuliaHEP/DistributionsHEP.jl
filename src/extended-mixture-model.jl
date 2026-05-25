@@ -6,28 +6,31 @@ normalized probabilities. For components `f_k` and yields `y_k`, the density is
 `sum(y_k * f_k(x) for k)`. This is the density term used in extended
 likelihood fits where the fitted parameters are component yields.
 
-Yields must be non-negative and have the same length as `components`.
-Use `MixtureModel(model)` to convert to the corresponding normalized mixture.
+Yields must have the same non-empty length as `components`. Use `model(x)` to
+evaluate the extended density and `MixtureModel(model)` to convert to the
+corresponding normalized mixture.
 """
 struct ExtendedMixtureModel{
     VF<:VariateForm,
     VS<:ValueSupport,
     C<:Distribution,
     T<:Real,
-} <: Distribution{VF,VS}
+}
     components::Vector{C}
     yields::Vector{T}
 
     function ExtendedMixtureModel{VF,VS,C,T}(components::Vector{C}, yields::Vector{T}) where {VF,VS,C,T}
         length(components) == length(yields) ||
             throw(ArgumentError("ExtendedMixtureModel: $(length(components)) components vs $(length(yields)) yields"))
+        !isempty(components) ||
+            throw(ArgumentError("ExtendedMixtureModel: components and yields must be non-empty"))
         return new{VF,VS,C,T}(components, yields)
     end
 end
 
 function ExtendedMixtureModel(components::AbstractVector{C}, yields::AbstractVector{<:Real}) where {C<:Distribution}
     length(components) == length(yields) || throw(ArgumentError("ExtendedMixtureModel: length mismatch"))
-    any(y -> y < zero(y), yields) && throw(ArgumentError("ExtendedMixtureModel: yields must be non-negative"))
+    !isempty(components) || throw(ArgumentError("ExtendedMixtureModel: components and yields must be non-empty"))
 
     VF = Distributions.variate_form(C)
     VS = Distributions.value_support(C)
@@ -79,36 +82,26 @@ function (::Type{MixtureModel})(d::ExtendedMixtureModel)
     return MixtureModel(components(d), yields(d) ./ total)
 end
 
-function Distributions.pdf(d::ExtendedMixtureModel{Univariate}, x::Real)
+function (d::ExtendedMixtureModel{Univariate})(x::Real)
     return sum(y * pdf(component(d, i), x) for (i, y) in enumerate(yields(d)) if !iszero(y))
 end
 
-function Distributions.pdf(d::ExtendedMixtureModel{Multivariate}, x::AbstractVector{<:Real})
+function (d::ExtendedMixtureModel{Multivariate})(x::AbstractVector{<:Real})
     return sum(y * pdf(component(d, i), x) for (i, y) in enumerate(yields(d)) if !iszero(y))
-end
-
-function Distributions.logpdf(d::ExtendedMixtureModel{Univariate}, x::Real)
-    density = pdf(d, x)
-    return density <= zero(density) ? -Inf : log(density)
-end
-
-function Distributions.logpdf(d::ExtendedMixtureModel{Multivariate}, x::AbstractVector{<:Real})
-    density = pdf(d, x)
-    return density <= zero(density) ? -Inf : log(density)
 end
 
 """
     extended_negative_log_likelihood(model, data)
 
-Evaluate `-sum(logpdf(model, x) for x in data) + total_yield(model)`.
+Evaluate `-sum(log(model(x)) for x in data) + total_yield(model)`.
 For multivariate models, an `AbstractMatrix` is interpreted column-wise.
 """
 function extended_negative_log_likelihood(d::ExtendedMixtureModel, data)
     nll = zero(float(total_yield(d)))
     for x in data
-        lp = logpdf(d, x)
-        isfinite(lp) || return oftype(nll, Inf)
-        nll -= lp
+        density = d(x)
+        density > zero(density) || return oftype(nll, Inf)
+        nll -= log(density)
     end
     return nll + total_yield(d)
 end
