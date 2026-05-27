@@ -3,6 +3,15 @@ using Distributions
 using LinearAlgebra
 using Test
 
+function test_bounds(model, expected_min, expected_max)
+    @test minimum(model) == expected_min
+    @test maximum(model) == expected_max
+    expected_support = expected_min isa AbstractVector ?
+        Distributions.RealInterval.(expected_min, expected_max) :
+        Distributions.RealInterval(expected_min, expected_max)
+    @test support(model) == expected_support
+end
+
 @testset "ExtendedMixtureModel" begin
     components = [Normal(-1.0, 0.5), Normal(1.0, 0.25)]
     ys = [20, 5]
@@ -21,9 +30,8 @@ using Test
     @test !hasmethod(pdf, Tuple{typeof(model), typeof(x)})
 
     normalized = MixtureModel(model)
-    normalized_from_pipe = model |> MixtureModel
     @test pdf(normalized, x) ≈ expected_density / total_yield(model)
-    @test probs(normalized_from_pipe) ≈ yields(model) ./ total_yield(model)
+    @test probs(normalized) ≈ yields(model) ./ total_yield(model)
 
     data = [-1.0, -0.5, 0.9]
     expected_nll = -sum(log(model(xi)) for xi in data) + total_yield(model)
@@ -60,29 +68,18 @@ end
     background = product_distribution([Uniform(-2.0, 2.0), Normal(1.0, 1.5)])
     mixed = MixtureModel([signal, swapped], [0.25, 0.75])
 
-    model = ExtendedMixtureModel([signal, mixed, background], [10.0, 5.0, 2.0])
-    @test minimum(model) == [-Inf, -Inf]
-    @test maximum(model) == [Inf, Inf]
-    @test support(model) == Distributions.RealInterval.(minimum(model), maximum(model))
-    @test all(minimum(model) .== getproperty.(support(model), :lb))
-    @test all(maximum(model) .== getproperty.(support(model), :ub))
+    test_bounds(
+        ExtendedMixtureModel([signal, mixed, background], [10.0, 5.0, 2.0]),
+        [-Inf, -Inf],
+        [Inf, Inf],
+    )
 
     finite_product = product_distribution([Uniform(-2.0, 2.0), Uniform(0.0, 1.0)])
-    finite_model = ExtendedMixtureModel([finite_product], [1.0])
-    @test minimum(finite_model) == [-2.0, 0.0]
-    @test maximum(finite_model) == [2.0, 1.0]
-    @test support(finite_model) == Distributions.RealInterval.([-2.0, 0.0], [2.0, 1.0])
-    @test all(minimum(finite_model) .== getproperty.(support(finite_model), :lb))
-    @test all(maximum(finite_model) .== getproperty.(support(finite_model), :ub))
+    test_bounds(ExtendedMixtureModel([finite_product], [1.0]), [-2.0, 0.0], [2.0, 1.0])
 
-    gaussian_product = product_distribution([Normal(-1.0, 0.5), Normal(1.0, 1.5)])
-    gaussian_model = ExtendedMixtureModel([gaussian_product], [10.0])
-    @test support(gaussian_model) == Distributions.RealInterval.([-Inf, -Inf], [Inf, Inf])
-
-    univariate_model = ExtendedMixtureModel([Normal(-1.0, 0.5), Uniform(-2.0, 2.0)], [3.0, 1.0])
-    @test minimum(univariate_model) == -Inf
-    @test maximum(univariate_model) == Inf
-    @test support(univariate_model) == Distributions.RealInterval(-Inf, Inf)
-    @test minimum(univariate_model) == support(univariate_model).lb
-    @test maximum(univariate_model) == support(univariate_model).ub
+    test_bounds(
+        ExtendedMixtureModel([Normal(-1.0, 0.5), Uniform(-2.0, 2.0)], [3.0, 1.0]),
+        -Inf,
+        Inf,
+    )
 end
