@@ -53,24 +53,3 @@ end
     expected_nll = -sum(log(model(col)) for col in eachcol(data)) + total_yield(model)
     @test extended_negative_log_likelihood(model, data) ≈ expected_nll
 end
-
-@testset "ExtendedMixtureModel marginalization" begin
-    @test !(:marginalize in names(DistributionsHEP))
-
-    signal = product_distribution([Normal(-1.0, 0.5), Exponential(2.0)])
-    swapped = product_distribution([Exponential(2.0), Normal(-1.0, 0.5)])
-    background = product_distribution([Uniform(-2.0, 2.0), Normal(1.0, 1.5)])
-    mixed = MixtureModel([signal, swapped], [0.25, 0.75])
-    model = ExtendedMixtureModel([signal, mixed, background], [10.0, 5.0, 2.0])
-
-    m1 = DistributionsHEP.marginalize(model, 1)
-    @test yields(m1) == yields(model)
-    @test total_yield(m1) == total_yield(model)
-
-    x = 0.2
-    expected_density =
-        10.0 * pdf(DistributionsHEP.marginalize(signal, 1), x) +
-        5.0 * pdf(DistributionsHEP.marginalize(mixed, 1), x) +
-        2.0 * pdf(DistributionsHEP.marginalize(background, 1), x)
-    @test m1(x) ≈ expected_density
-end

@@ -49,32 +49,6 @@ yields(d::ExtendedMixtureModel) = d.yields
 """Return `sum(yields(d))` for an `ExtendedMixtureModel`."""
 total_yield(d::ExtendedMixtureModel) = sum(yields(d))
 
-factor(d::Distributions.Product, k::Int) = d.v[k]
-
-"""
-    marginalize(model, k)
-
-Return the exact one-dimensional marginal distribution for dimension `k` when
-the model is built from independent product components and mixtures.
-"""
-function marginalize(d::Distributions.Product, k::Int)
-    return factor(d, k)
-end
-
-function marginalize(d::Distributions.AbstractMixtureModel, k::Int)
-    return MixtureModel(
-        [marginalize(c, k) for c in components(d)],
-        probs(d),
-    )
-end
-
-function marginalize(d::ExtendedMixtureModel, k::Int)
-    return ExtendedMixtureModel(
-        [marginalize(c, k) for c in components(d)],
-        yields(d),
-    )
-end
-
 function (::Type{MixtureModel})(d::ExtendedMixtureModel)
     total = total_yield(d)
     total > zero(total) ||
