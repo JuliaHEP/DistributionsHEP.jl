@@ -62,13 +62,10 @@ function _union_maximum(components::AbstractVector{<:Distribution})
     return mapreduce(maximum, (x, y) -> max.(x, y), components)
 end
 
-function _union_support(components::AbstractVector{<:Distribution})
-    return Distributions.RealInterval.(_union_minimum(components), _union_maximum(components))
-end
-
 Distributions.minimum(d::ExtendedMixtureModel) = _union_minimum(components(d))
 Distributions.maximum(d::ExtendedMixtureModel) = _union_maximum(components(d))
-Distributions.support(d::ExtendedMixtureModel) = _union_support(components(d))
+Distributions.support(d::ExtendedMixtureModel) =
+    Distributions.RealInterval.(minimum(d), maximum(d))
 
 function (::Type{MixtureModel})(d::ExtendedMixtureModel)
     total = total_yield(d)
