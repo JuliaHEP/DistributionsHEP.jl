@@ -42,4 +42,6 @@ include("double-sided-bifurcated-crystal-ball-das.jl")
 export ExtendedMixtureModel, yields, total_yield, extended_negative_log_likelihood
 include("extended-mixture-model.jl")
 
+include("marginalize.jl")
+
 end
