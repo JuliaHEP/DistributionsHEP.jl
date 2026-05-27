@@ -46,24 +46,10 @@ yields(d::ExtendedMixtureModel) = d.yields
 """Return `sum(yields(d))` for an `ExtendedMixtureModel`."""
 total_yield(d::ExtendedMixtureModel) = sum(yields(d))
 
-function _union_minimum(components::AbstractVector{<:Distribution})
-    first_component = first(components)
-    if Distributions.variate_form(typeof(first_component)) == Univariate
-        return minimum(minimum(c) for c in components)
-    end
-    return mapreduce(minimum, (x, y) -> min.(x, y), components)
-end
-
-function _union_maximum(components::AbstractVector{<:Distribution})
-    first_component = first(components)
-    if Distributions.variate_form(typeof(first_component)) == Univariate
-        return maximum(maximum(c) for c in components)
-    end
-    return mapreduce(maximum, (x, y) -> max.(x, y), components)
-end
-
-Distributions.minimum(d::ExtendedMixtureModel) = _union_minimum(components(d))
-Distributions.maximum(d::ExtendedMixtureModel) = _union_maximum(components(d))
+Distributions.minimum(d::ExtendedMixtureModel) =
+    reduce((x, y) -> min.(x, y), minimum.(components(d)))
+Distributions.maximum(d::ExtendedMixtureModel) =
+    reduce((x, y) -> max.(x, y), maximum.(components(d)))
 Distributions.support(d::ExtendedMixtureModel) =
     Distributions.RealInterval.(minimum(d), maximum(d))
 
