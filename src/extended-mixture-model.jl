@@ -29,9 +29,6 @@ struct ExtendedMixtureModel{
 end
 
 function ExtendedMixtureModel(components::AbstractVector{C}, yields::AbstractVector{<:Real}) where {C<:Distribution}
-    length(components) == length(yields) || throw(ArgumentError("ExtendedMixtureModel: length mismatch"))
-    !isempty(components) || throw(ArgumentError("ExtendedMixtureModel: components and yields must be non-empty"))
-
     VF = Distributions.variate_form(C)
     VS = Distributions.value_support(C)
     T = promote_type(Float64, eltype(yields))
