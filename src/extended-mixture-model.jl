@@ -60,11 +60,7 @@ function (::Type{MixtureModel})(d::ExtendedMixtureModel)
     return MixtureModel(components(d), yields(d) ./ total)
 end
 
-function (d::ExtendedMixtureModel{Univariate})(x::Real)
-    return sum(y * pdf(component(d, i), x) for (i, y) in enumerate(yields(d)) if !iszero(y))
-end
-
-function (d::ExtendedMixtureModel{Multivariate})(x::AbstractVector{<:Real})
+function (d::ExtendedMixtureModel)(x)
     return sum(y * pdf(component(d, i), x) for (i, y) in enumerate(yields(d)) if !iszero(y))
 end
 
