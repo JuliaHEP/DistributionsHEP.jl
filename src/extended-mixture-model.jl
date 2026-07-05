@@ -72,7 +72,8 @@ end
     extended_negative_log_likelihood(model, data)
 
 Evaluate `-sum(log(model(x)) for x in data) + total_yield(model)`.
-For multivariate models, an `AbstractMatrix` is interpreted column-wise.
+For generic iterables, data points are taken as `x in data`. For multivariate
+models with `data::AbstractMatrix`, data points are taken as `x in eachcol(data)`.
 """
 function extended_negative_log_likelihood(d::ExtendedMixtureModel, data)
     nll = zero(float(total_yield(d)))
