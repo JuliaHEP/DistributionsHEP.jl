@@ -13,6 +13,7 @@ any distributions requiring numerical integration can be wrapped ith [`Numerical
 - **CrystalBall**, **DoubleCrystalBall**: One-sided and two-sided Crystal Ball distribution with Gaussian core and power-law tail
 - **HyperbolicSecant**: Hyperbolic secant distribution with location-scale family similar to normal distribution but with fatter tails
 - **BifurcatedGaussian**: Asymmetric Gaussian distribution with different scale parameters on left and right sides
+- **ExtendedMixtureModel**: Mixture-like model for extended likelihood fits where component weights are expected yields instead of normalized probabilities
 
 Mathematical derivations for Crystal Ball distributions are in [`docs/CrystalBallMath.md`](docs/CrystalBallMath.md), formulas for ARGUS background distribution are in [`docs/ArgusBG.md`](docs/ArgusBG.md), and derivations for Bifurcated Gaussian (including skewness formula) are in [`docs/BifurcatedGaussianMath.md`](docs/BifurcatedGaussianMath.md).
 
@@ -48,6 +49,34 @@ rand(cheb)
 ```
 
 The rest of the interface (`pdf`, `cdf`, `rand`, etc.) follows the standard `Distributions.jl` API.
+
+### Extended mixture models
+
+`ExtendedMixtureModel` is useful for extended likelihood fits where fitted
+component weights are expected event yields, not normalized mixture fractions.
+For components `f_k` and yields `y_k`, call the model directly to evaluate
+
+```math
+f_{\mathrm{ext}}(x) = \sum_k y_k f_k(x).
+```
+
+```julia
+using Distributions
+using DistributionsHEP
+
+components = [Normal(-1.0, 0.5), Normal(1.0, 0.25)]
+model = ExtendedMixtureModel(components, [20.0, 5.0])
+
+model(0.1)
+extended_negative_log_likelihood(model, [-1.0, -0.5, 0.9])
+```
+
+`ExtendedMixtureModel` deliberately does not define `pdf(model, x)` or
+`logpdf(model, x)`, because the yield-weighted density is not normalized.
+Use `MixtureModel(model)` when a normalized mixture is needed. The helper
+accessors `yields(model)` and `total_yield(model)` are available as
+`DistributionsHEP.yields` and `DistributionsHEP.total_yield`, or by importing
+them explicitly.
 
 ## Contributing
 
