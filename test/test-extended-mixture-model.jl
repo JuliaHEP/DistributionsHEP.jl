@@ -3,6 +3,8 @@ using Distributions
 using LinearAlgebra
 using Test
 
+import DistributionsHEP: total_yield, yields
+
 function test_bounds(model, expected_min, expected_max)
     @test minimum(model) == expected_min
     @test maximum(model) == expected_max
