@@ -31,7 +31,7 @@ end
 function ExtendedMixtureModel(components::AbstractVector{C}, yields::AbstractVector{<:Real}) where {C<:Distribution}
     VF = Distributions.variate_form(C)
     VS = Distributions.value_support(C)
-    T = promote_type(Float64, eltype(yields))
+    T = float(eltype(yields))
     return ExtendedMixtureModel{VF,VS,C,T}(collect(components), T.(yields))
 end
 

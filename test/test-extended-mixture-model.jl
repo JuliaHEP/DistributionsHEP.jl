@@ -26,6 +26,9 @@ end
     @test yields(model) == [20.0, 5.0]
     @test total_yield(model) == 25.0
 
+    float32_model = ExtendedMixtureModel(components, Float32[20, 5])
+    @test yields(float32_model) == Float32[20, 5]
+
     x = 0.1
     expected_density = 20.0 * pdf(components[1], x) + 5.0 * pdf(components[2], x)
     @test model(x) ≈ expected_density
