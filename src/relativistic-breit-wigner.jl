@@ -7,11 +7,15 @@ resonance behavior in scattering processes, particularly for unstable particles 
 This version accounts for relativistic effects and is more accurate at higher energies than the classical (non-relativistic)
 Breit-Wigner distribution.
 
-The probability density function (PDF) is defined as:
+The probability density function (PDF) is defined on ``x >= 0`` as:
 ````math
 f(x; M, Γ) = \\frac{k}{(x^2 - M^2)^2 + M^2 Γ^2}
 ````
-where ``k = \\frac{2 \\sqrt{2} M Γ γ}{π \\sqrt{M^2 + γ}}`` and ``γ = \\sqrt{M^2 (M^2 + Γ^2)}``.
+where ``k = \\frac{2 M^3 γ S}{π R}``, ``γ = Γ / M``,
+``S = \\sqrt{1 + γ^2}``, and ``R = \\sqrt{(1 + S) / 2}``.
+
+The quantile function is not implemented. Use NumericalDistributions.jl or solve
+``cdf(d, x) - p = 0`` numerically for inverse-transform sampling.
 
 #Arguments
 - "M" : A real-valued location parameter that shifts the center of the distribution.
@@ -53,8 +57,10 @@ function Distributions.pdf(r::RelativisticBreitWigner{T}, x::Real) where {T <: R
         zero(T) # PDF is zero for negative values
     else
         (; M, Γ) = r
-        γ = sqrt(M^2 * (M^2 + Γ^2))
-        normalization = (T(2)*sqrt(T(2)) * M * Γ * γ)/(π * sqrt(M^2 + γ))
+        γ = Γ / M
+        S = sqrt(one(T) + γ^2)
+        R = sqrt((one(T) + S) / T(2))
+        normalization = T(2) * M^3 * γ * S / (T(π) * R)
         Msq_minus_xsq = (M-x)*(M+x)
         denominator = Msq_minus_xsq^2 + (M^2 * Γ^2)
         normalization/denominator
@@ -66,20 +72,30 @@ function Distributions.logpdf(r::RelativisticBreitWigner{T}, x::Real) where {T <
     return log(pdf(r,x))
 end
 
-# Cumulative Distribution Function (CDF)
-# Extracted from the continous distribution section of SciPy
-# https://github.com/scipy/scipy/blob/b1296b9b4393e251511fe8fdd3e58c22a1124899/scipy/stats/_continuous_distns.py#L12407C6-L12416C40
 function Distributions.cdf(r::RelativisticBreitWigner{T}, x::Real) where {T <: Real}
     x < zero(T) && return zero(T)
-    # 
-    ρ = r.M/r.Γ
-    two = T(2)
-    C =  1/T(π) * √(two / (1 + √ (1 + 1/ρ^2) ))
-    z1 = sqrt(-1 + im / ρ)
-    z2 = sqrt(-ρ * (ρ + im))
-    term = z1 * atan(x / z2)
-    result = abs(two * C * imag(term))
-    return min(result, one(T))
+    isinf(x) && return one(T)
+
+    (; M, Γ) = r
+    xT = T(x)
+    γ = Γ / M
+    S = sqrt(one(T) + γ^2)
+    R = sqrt((one(T) + S) / T(2))
+    K = γ / (T(2) * R)
+    y = xT / M
+
+    atan_term = (atan((y + R) / K) + atan((y - R) / K)) / T(π)
+    log_term = γ / (T(2) * T(π) * (one(T) + S)) *
+        log(((y + R)^2 + K^2) / ((y - R)^2 + K^2))
+    result = atan_term + log_term
+    return min(max(result, zero(T)), one(T))
+end
+
+function Distributions.quantile(::RelativisticBreitWigner, p::Real)
+    zero(p) <= p <= one(p) || throw(DomainError(p, "p must be in [0, 1]"))
+    throw(ArgumentError(
+        "quantile is not implemented for RelativisticBreitWigner; use NumericalDistributions.jl or solve cdf(d, x) - p = 0 numerically",
+    ))
 end
 
 # Parameters
@@ -91,16 +107,26 @@ Distributions.params(r::RelativisticBreitWigner) = (r.M, r.Γ)
 
 # Statistics
 mode(r::RelativisticBreitWigner) = r.M
-skewness(r::RelativisticBreitWigner{T}) where {T<:Real} = T(Inf)
+skewness(r::RelativisticBreitWigner{T}) where {T<:Real} = T(NaN)
 
-# given by an integral [x^k f(x) dx] in [0, Inf] -- probably possible to compute analytically
-mean(r::RelativisticBreitWigner{T}) where {T<:Real} = T(NaN)
-median(r::RelativisticBreitWigner) = r.M
-var(r::RelativisticBreitWigner{T}) where {T<:Real} = T(NaN)
-kurtosis(r::RelativisticBreitWigner{T}) where {T<:Real} = T(0)
+function mean(r::RelativisticBreitWigner{T}) where {T<:Real}
+    γ = r.Γ / r.M
+    S = sqrt(one(T) + γ^2)
+    R = sqrt((one(T) + S) / T(2))
+    return r.M * (T(π) - atan(γ)) * S / (T(π) * R)
+end
+
+function var(r::RelativisticBreitWigner{T}) where {T<:Real}
+    γ = r.Γ / r.M
+    S = sqrt(one(T) + γ^2)
+    μ = mean(r)
+    return r.M^2 * S - μ^2
+end
+
+std(r::RelativisticBreitWigner) = sqrt(var(r))
+kurtosis(r::RelativisticBreitWigner{T}) where {T<:Real} = T(NaN)
 
 
-Distributions.minimum(r::RelativisticBreitWigner{T}) where {T <: Real} = T(-Inf)
+Distributions.minimum(r::RelativisticBreitWigner{T}) where {T <: Real} = zero(T)
 Distributions.maximum(r::RelativisticBreitWigner{T}) where {T <: Real} = T(Inf)
-
 

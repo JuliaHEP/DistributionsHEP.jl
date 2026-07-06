@@ -56,6 +56,36 @@ d = RelativisticBreitWigner(0.1, 1.0)  # M, Γ
             quad_val = quadgk(t -> pdf(d, t), 0.0, x)[1]
             @test isapprox(cdf_val, quad_val; atol=1e-5)
         end
+
+        @test cdf(d, 0.0) == 0.0
+        @test cdf(d, Inf) == 1.0
+    end
+
+    @testset "Moments" begin
+        test_cases = [
+            (0.1, 1.0),
+            (1.0, 0.2),
+            (1.5, 2.5),
+        ]
+
+        for (M, Γ) in test_cases
+            d_test = RelativisticBreitWigner(M, Γ)
+            numerical_mean = quadgk(x -> x * pdf(d_test, x), 0.0, Inf; rtol=1e-8)[1]
+            numerical_second_moment = quadgk(x -> x^2 * pdf(d_test, x), 0.0, Inf; rtol=1e-8)[1]
+
+            @test isapprox(mean(d_test), numerical_mean; rtol=1e-7)
+            @test isapprox(var(d_test), numerical_second_moment - mean(d_test)^2; rtol=1e-7)
+            @test isapprox(std(d_test), sqrt(var(d_test)); rtol=1e-12)
+        end
+
+        @test isnan(skewness(d))
+        @test isnan(kurtosis(d))
+    end
+
+    @testset "Quantile" begin
+        @test_throws ArgumentError quantile(d, 0.5)
+        @test_throws DomainError quantile(d, -0.1)
+        @test_throws DomainError quantile(d, 1.1)
     end
 
     @testset "Type stability" begin
@@ -68,6 +98,10 @@ d = RelativisticBreitWigner(0.1, 1.0)  # M, Γ
         @test pdf(d_float32, 0.0f0) isa Float32
         @test cdf(d_float64, 0.0) isa Float64
         @test cdf(d_float32, 0.0f0) isa Float32
+        @test mean(d_float64) isa Float64
+        @test mean(d_float32) isa Float32
+        @test var(d_float64) isa Float64
+        @test var(d_float32) isa Float32
 
         # Integer constructor should promote to Float64
         @test pdf(d_int, 1) isa Float64
@@ -82,9 +116,9 @@ d = RelativisticBreitWigner(0.1, 1.0)  # M, Γ
         d_float64 = RelativisticBreitWigner(0.1, 1.0)
         d_float32 = RelativisticBreitWigner(0.1f0, 1.0f0)
 
-        @test minimum(d_float64) == -Inf
+        @test minimum(d_float64) == 0.0
         @test maximum(d_float64) == Inf
-        @test minimum(d_float32) == -Inf32
+        @test minimum(d_float32) == 0.0f0
         @test maximum(d_float32) == Inf32
         @test minimum(d_float64) == support(d_float64).lb
         @test maximum(d_float64) == support(d_float64).ub
