@@ -107,7 +107,7 @@ Distributions.params(r::RelativisticBreitWignerConstantWidth) = (r.M, r.Γ)
 
 # Statistics
 mode(r::RelativisticBreitWignerConstantWidth) = r.M
-skewness(r::RelativisticBreitWignerConstantWidth{T}) where {T<:Real} = T(NaN)
+skewness(r::RelativisticBreitWignerConstantWidth{T}) where {T<:Real} = T(Inf)
 
 function mean(r::RelativisticBreitWignerConstantWidth{T}) where {T<:Real}
     γ = r.Γ / r.M
@@ -124,9 +124,8 @@ function var(r::RelativisticBreitWignerConstantWidth{T}) where {T<:Real}
 end
 
 std(r::RelativisticBreitWignerConstantWidth) = sqrt(var(r))
-kurtosis(r::RelativisticBreitWignerConstantWidth{T}) where {T<:Real} = T(NaN)
+kurtosis(r::RelativisticBreitWignerConstantWidth{T}) where {T<:Real} = T(Inf)
 
 
 Distributions.minimum(r::RelativisticBreitWignerConstantWidth{T}) where {T <: Real} = zero(T)
 Distributions.maximum(r::RelativisticBreitWignerConstantWidth{T}) where {T <: Real} = T(Inf)
-

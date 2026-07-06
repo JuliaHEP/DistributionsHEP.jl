@@ -78,8 +78,8 @@ d = RelativisticBreitWignerConstantWidth(0.1, 1.0)  # M, Γ
             @test isapprox(std(d_test), sqrt(var(d_test)); rtol=1e-12)
         end
 
-        @test isnan(skewness(d))
-        @test isnan(kurtosis(d))
+        @test skewness(d) == Inf
+        @test kurtosis(d) == Inf
     end
 
     @testset "Quantile" begin
