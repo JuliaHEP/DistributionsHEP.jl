@@ -5,15 +5,15 @@ using QuadGK
 using Test
 
 # Test distribution with M = 0.1, Γ = 1.0 (standard case)
-d = RelativisticBreitWigner(0.1, 1.0)  # M, Γ
+d = RelativisticBreitWignerConstantWidth(0.1, 1.0)  # M, Γ
 
-@testset "RelativisticBreitWigner Distribution" verbose = true begin
+@testset "RelativisticBreitWignerConstantWidth Distribution" verbose = true begin
     @testset "Parameter validation" begin
         # M must be positive
-        @test_throws ErrorException RelativisticBreitWigner(-1.0, 1.0)
+        @test_throws ErrorException RelativisticBreitWignerConstantWidth(-1.0, 1.0)
 
         # Γ must be positive
-        @test_throws ErrorException RelativisticBreitWigner(1.0, -1.0)
+        @test_throws ErrorException RelativisticBreitWignerConstantWidth(1.0, -1.0)
     end
 
     @testset "PDF properties" begin
@@ -69,7 +69,7 @@ d = RelativisticBreitWigner(0.1, 1.0)  # M, Γ
         ]
 
         for (M, Γ) in test_cases
-            d_test = RelativisticBreitWigner(M, Γ)
+            d_test = RelativisticBreitWignerConstantWidth(M, Γ)
             numerical_mean = quadgk(x -> x * pdf(d_test, x), 0.0, Inf; rtol=1e-8)[1]
             numerical_second_moment = quadgk(x -> x^2 * pdf(d_test, x), 0.0, Inf; rtol=1e-8)[1]
 
@@ -89,10 +89,10 @@ d = RelativisticBreitWigner(0.1, 1.0)  # M, Γ
     end
 
     @testset "Type stability" begin
-        d_float64 = RelativisticBreitWigner(0.1, 1.0)
-        d_float32 = RelativisticBreitWigner(0.1f0, 1.0f0)
-        d_int = RelativisticBreitWigner(1, 2)
-        d_mix = RelativisticBreitWigner(1, 2.0f0)
+        d_float64 = RelativisticBreitWignerConstantWidth(0.1, 1.0)
+        d_float32 = RelativisticBreitWignerConstantWidth(0.1f0, 1.0f0)
+        d_int = RelativisticBreitWignerConstantWidth(1, 2)
+        d_mix = RelativisticBreitWignerConstantWidth(1, 2.0f0)
 
         @test pdf(d_float64, 0.0) isa Float64
         @test pdf(d_float32, 0.0f0) isa Float32
@@ -113,8 +113,8 @@ d = RelativisticBreitWigner(0.1, 1.0)  # M, Γ
     end
 
     @testset "Support interface" begin
-        d_float64 = RelativisticBreitWigner(0.1, 1.0)
-        d_float32 = RelativisticBreitWigner(0.1f0, 1.0f0)
+        d_float64 = RelativisticBreitWignerConstantWidth(0.1, 1.0)
+        d_float32 = RelativisticBreitWignerConstantWidth(0.1f0, 1.0f0)
 
         @test minimum(d_float64) == 0.0
         @test maximum(d_float64) == Inf
@@ -133,13 +133,13 @@ d = RelativisticBreitWigner(0.1, 1.0)  # M, Γ
         ]
 
         for (M, Γ) in test_cases
-            d_test = RelativisticBreitWigner(M, Γ)
+            d_test = RelativisticBreitWignerConstantWidth(M, Γ)
             p = params(d_test)
             @test p == (M, Γ)
         end
 
         # Test location and scale
-        d_test = RelativisticBreitWigner(1.5, 2.5)
+        d_test = RelativisticBreitWignerConstantWidth(1.5, 2.5)
         @test location(d_test) == 1.5
         @test scale(d_test) == 2.5
     end
